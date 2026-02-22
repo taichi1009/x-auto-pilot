@@ -8,15 +8,18 @@ from sqlalchemy import desc
 
 from app.models.models import FollowTarget, FollowAction, FollowStatus
 from app.schemas.schemas import FollowTargetCreate
-from app.services.x_api import XApiService
+from app.services.x_api import XApiService, create_x_api_service
 
 logger = logging.getLogger(__name__)
 
 
 class FollowService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, user_id: Optional[int] = None) -> None:
         self.db = db
-        self.x_api = XApiService()
+        if user_id is not None:
+            self.x_api = create_x_api_service(db, user_id)
+        else:
+            self.x_api = XApiService()
 
     def get_follow_targets(
         self,
@@ -69,7 +72,7 @@ class FollowService:
         )
         return target
 
-    def discover_users(self, query: str) -> List[Dict[str, Any]]:
+    def discover_users(self, query: str, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
         users = self.x_api.search_users(query)
         return users
 

@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 
 import anthropic
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
 from app.config import settings
 
@@ -11,8 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class AIService:
-    def __init__(self, provider: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        provider: Optional[str] = None,
+        claude_api_key: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
+    ) -> None:
         self.provider = provider or settings.AI_PROVIDER
+        self._claude_api_key = claude_api_key or settings.CLAUDE_API_KEY
+        self._openai_api_key = openai_api_key or settings.OPENAI_API_KEY
         self._claude_client: Optional[anthropic.Anthropic] = None
         self._openai_client = None
 
@@ -20,12 +28,12 @@ class AIService:
     def client(self) -> anthropic.Anthropic:
         """Legacy accessor for Claude client (backward compat)."""
         if self._claude_client is None:
-            if not settings.CLAUDE_API_KEY:
+            if not self._claude_api_key:
                 raise HTTPException(
                     status_code=500,
                     detail="CLAUDE_API_KEY is not configured.",
                 )
-            self._claude_client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
+            self._claude_client = anthropic.Anthropic(api_key=self._claude_api_key)
         return self._claude_client
 
     @property
@@ -33,12 +41,12 @@ class AIService:
         if self._openai_client is None:
             import openai
 
-            if not settings.OPENAI_API_KEY:
+            if not self._openai_api_key:
                 raise HTTPException(
                     status_code=500,
                     detail="OPENAI_API_KEY is not configured.",
                 )
-            self._openai_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            self._openai_client = openai.OpenAI(api_key=self._openai_api_key)
         return self._openai_client
 
     def call_llm(
@@ -363,3 +371,15 @@ class AIService:
             raise HTTPException(
                 status_code=502, detail=f"AI API error: {exc}"
             ) from exc
+
+
+def create_ai_service(db: Session, user_id: int) -> AIService:
+    """Factory: build an AIService using per-user settings from the DB."""
+    from app.services.user_settings import get_ai_settings
+
+    cfg = get_ai_settings(db, user_id)
+    return AIService(
+        provider=cfg["provider"] or None,
+        claude_api_key=cfg["claude_api_key"] or None,
+        openai_api_key=cfg["openai_api_key"] or None,
+    )

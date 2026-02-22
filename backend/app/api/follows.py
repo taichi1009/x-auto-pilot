@@ -21,7 +21,7 @@ def list_follow_targets(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = FollowService(db)
+    service = FollowService(db, user_id=current_user.id)
     targets, total = service.get_follow_targets(
         skip=skip, limit=limit, status=status, action=action,
         user_id=current_user.id,
@@ -35,7 +35,7 @@ def discover_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = FollowService(db)
+    service = FollowService(db, user_id=current_user.id)
     users = service.discover_users(query, user_id=current_user.id)
     return {"users": users}
 
@@ -46,7 +46,7 @@ def execute_follow(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = FollowService(db)
+    service = FollowService(db, user_id=current_user.id)
     return service.execute_follow(target_id, user_id=current_user.id)
 
 
@@ -55,6 +55,6 @@ def get_follow_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = FollowService(db)
+    service = FollowService(db, user_id=current_user.id)
     stats = service.get_follow_stats(user_id=current_user.id)
     return stats

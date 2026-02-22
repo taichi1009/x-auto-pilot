@@ -12,6 +12,7 @@ from sqlalchemy import (
     JSON,
     Float,
     ForeignKey,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -204,10 +205,13 @@ class PostAnalytics(Base):
 
 class AppSetting(Base):
     __tablename__ = "app_settings"
+    __table_args__ = (
+        UniqueConstraint("user_id", "key", name="uq_app_settings_user_key"),
+    )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    key = Column(String(255), unique=True, nullable=False, index=True)
+    key = Column(String(255), nullable=False, index=True)
     value = Column(Text, nullable=False)
     category = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

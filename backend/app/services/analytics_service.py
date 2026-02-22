@@ -7,15 +7,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
 from app.models.models import Post, PostAnalytics, PostStatus
-from app.services.x_api import XApiService
+from app.services.x_api import XApiService, create_x_api_service
 
 logger = logging.getLogger(__name__)
 
 
 class AnalyticsService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, user_id: Optional[int] = None) -> None:
         self.db = db
-        self.x_api = XApiService()
+        if user_id is not None:
+            self.x_api = create_x_api_service(db, user_id)
+        else:
+            self.x_api = XApiService()
 
     def get_overview(self, days: int = 30, user_id: Optional[int] = None) -> Dict[str, Any]:
         cutoff = datetime.utcnow() - timedelta(days=days)

@@ -29,6 +29,50 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _seed_admin_settings(db, admin_id: int) -> None:
+    """Seed AppSetting rows from env vars for the admin user.
+
+    Only creates a setting if it doesn't already exist, so user edits are preserved.
+    """
+    from app.models.models import AppSetting
+
+    env_to_key = {
+        "X_API_KEY": "x_api_key",
+        "X_API_SECRET": "x_api_secret",
+        "X_ACCESS_TOKEN": "x_access_token",
+        "X_ACCESS_TOKEN_SECRET": "x_access_token_secret",
+        "X_BEARER_TOKEN": "x_bearer_token",
+        "CLAUDE_API_KEY": "claude_api_key",
+        "OPENAI_API_KEY": "openai_api_key",
+        "AI_PROVIDER": "ai_provider",
+        "X_API_TIER": "api_tier",
+    }
+
+    seeded = 0
+    for env_attr, setting_key in env_to_key.items():
+        env_value = getattr(settings, env_attr, "")
+        if not env_value:
+            continue
+
+        existing = (
+            db.query(AppSetting)
+            .filter(AppSetting.user_id == admin_id, AppSetting.key == setting_key)
+            .first()
+        )
+        if not existing:
+            db.add(AppSetting(
+                user_id=admin_id,
+                key=setting_key,
+                value=env_value,
+                category="api",
+            ))
+            seeded += 1
+
+    if seeded:
+        db.commit()
+        logger.info("Seeded %d admin settings from env vars", seeded)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: create tables and start scheduler
@@ -36,9 +80,9 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created.")
 
-    # Create default admin user if not exists
+    # Create default admin user if not exists and seed settings from env
     from app.database import SessionLocal
-    from app.models.models import User, UserRole, SubscriptionTier
+    from app.models.models import User, UserRole, SubscriptionTier, AppSetting
     from app.utils.auth import hash_password
     db = SessionLocal()
     try:
@@ -55,6 +99,9 @@ async def lifespan(app: FastAPI):
             db.add(admin)
             db.commit()
             logger.info("Default admin user created (admin@example.com / Admin@2026!)")
+
+        # Seed admin API key settings from env vars (every startup)
+        _seed_admin_settings(db, admin.id)
     finally:
         db.close()
 

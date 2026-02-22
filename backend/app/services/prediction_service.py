@@ -14,15 +14,18 @@ from app.models.models import (
     PostStatus,
     PostFormat,
 )
-from app.services.ai_service import AIService
+from app.services.ai_service import AIService, create_ai_service
 
 logger = logging.getLogger(__name__)
 
 
 class PredictionService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, user_id: Optional[int] = None) -> None:
         self.db = db
-        self.ai_service = AIService()
+        if user_id is not None:
+            self.ai_service = create_ai_service(db, user_id)
+        else:
+            self.ai_service = AIService()
 
     def predict_impressions(
         self, content: str, post_format: str = "tweet"

@@ -13,6 +13,8 @@ from app.api.follows import router as follows_router
 from app.api.analytics import router as analytics_router
 from app.api.ai import router as ai_router
 from app.api.settings import router as settings_router
+from app.api.persona import router as persona_router
+from app.api.strategy import router as strategy_router
 from app.jobs.scheduler import start_scheduler, shutdown_scheduler
 
 # Configure logging
@@ -66,6 +68,8 @@ app.include_router(follows_router)
 app.include_router(analytics_router)
 app.include_router(ai_router)
 app.include_router(settings_router)
+app.include_router(persona_router)
+app.include_router(strategy_router)
 
 
 @app.get("/api/health")

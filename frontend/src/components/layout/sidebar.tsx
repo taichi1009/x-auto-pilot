@@ -14,6 +14,8 @@ import {
   Menu,
   X,
   Zap,
+  User,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +32,8 @@ const navItems: NavItem[] = [
   { label: "投稿", href: "/posts", icon: MessageSquare },
   { label: "テンプレート", href: "/templates", icon: FileText },
   { label: "スケジュール", href: "/schedule", icon: Calendar },
+  { label: "ペルソナ", href: "/persona", icon: User },
+  { label: "戦略", href: "/strategy", icon: Target },
   { label: "フォロー管理", href: "/following", icon: UserPlus, badge: "Basic+" },
   { label: "分析", href: "/analytics", icon: BarChart3, badge: "Basic+" },
   { label: "設定", href: "/settings", icon: Settings },

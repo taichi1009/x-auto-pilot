@@ -10,6 +10,8 @@ import {
   Sparkles,
   Calendar,
   Send,
+  User,
+  Target,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +25,8 @@ import {
   getStatusColor,
   getStatusLabel,
   getPostTypeLabel,
+  getPostFormatLabel,
+  getPostFormatColor,
 } from "@/lib/utils";
 import type { DashboardData } from "@/types";
 
@@ -79,7 +83,8 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Quick action cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link href="/posts/new">
           <Card className="bg-zinc-900 border-zinc-800 hover:border-blue-500/50 transition-colors cursor-pointer h-full">
             <CardContent className="p-6 flex items-center gap-4">
@@ -89,7 +94,7 @@ export default function DashboardPage() {
               <div>
                 <h3 className="font-semibold text-zinc-100">AI投稿を生成</h3>
                 <p className="text-sm text-zinc-400">
-                  AIを使って新しい投稿を作成します
+                  AIを使って新しい投稿を作成
                 </p>
               </div>
             </CardContent>
@@ -103,9 +108,41 @@ export default function DashboardPage() {
                 <Calendar className="h-6 w-6 text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-zinc-100">投稿をスケジュール</h3>
+                <h3 className="font-semibold text-zinc-100">スケジュール</h3>
                 <p className="text-sm text-zinc-400">
-                  投稿の予約スケジュールを設定します
+                  投稿の予約を設定
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/persona">
+          <Card className="bg-zinc-900 border-zinc-800 hover:border-blue-500/50 transition-colors cursor-pointer h-full">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-green-500/10">
+                <User className="h-6 w-6 text-green-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-zinc-100">ペルソナ</h3>
+                <p className="text-sm text-zinc-400">
+                  投稿キャラクターを設定
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/strategy">
+          <Card className="bg-zinc-900 border-zinc-800 hover:border-blue-500/50 transition-colors cursor-pointer h-full">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10">
+                <Target className="h-6 w-6 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-zinc-100">戦略</h3>
+                <p className="text-sm text-zinc-400">
+                  コンテンツ戦略を管理
                 </p>
               </div>
             </CardContent>
@@ -165,6 +202,14 @@ export default function DashboardPage() {
                       >
                         {getStatusLabel(post.status)}
                       </Badge>
+                      {post.post_format && post.post_format !== "tweet" && (
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] ${getPostFormatColor(post.post_format)}`}
+                        >
+                          {getPostFormatLabel(post.post_format)}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <Badge

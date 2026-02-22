@@ -62,14 +62,21 @@ class XApiService:
     def get_tier_limits(self) -> Dict[str, int]:
         return TIER_LIMITS.get(self.current_tier, TIER_LIMITS["free"])
 
-    def post_tweet(self, content: str) -> str:
-        if len(content) > 280:
+    def post_tweet(
+        self, content: str, reply_to: Optional[str] = None
+    ) -> str:
+        # Long-form posts (X Premium) allow up to 25,000 chars
+        # Regular tweets max 280
+        if not reply_to and len(content) > 25000:
             raise HTTPException(
                 status_code=400,
-                detail="Tweet content exceeds 280 characters.",
+                detail="Post content exceeds 25,000 characters.",
             )
         try:
-            response = self.client.create_tweet(text=content)
+            kwargs = {"text": content}
+            if reply_to:
+                kwargs["in_reply_to_tweet_id"] = reply_to
+            response = self.client.create_tweet(**kwargs)
             tweet_id = str(response.data["id"])
             logger.info("Tweet posted successfully: %s", tweet_id)
             return tweet_id

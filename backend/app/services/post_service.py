@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
-from app.models.models import Post, PostStatus, PostType
+from app.models.models import Post, PostStatus, PostType, PostFormat, ThreadPost
 from app.schemas.schemas import PostCreate, PostUpdate
 from app.services.x_api import XApiService
 
@@ -27,12 +27,27 @@ class PostService:
             content=data.content,
             status=PostStatus(data.status) if data.status else PostStatus.draft,
             post_type=PostType(data.post_type) if data.post_type else PostType.original,
+            post_format=PostFormat(data.post_format) if data.post_format else PostFormat.tweet,
+            persona_id=data.persona_id,
             schedule_id=data.schedule_id,
         )
         self.db.add(post)
         self.db.commit()
         self.db.refresh(post)
-        logger.info("Created post id=%d", post.id)
+
+        # Create thread posts if format is thread
+        if data.thread_contents and data.post_format == "thread":
+            for idx, thread_content in enumerate(data.thread_contents):
+                thread_post = ThreadPost(
+                    parent_post_id=post.id,
+                    content=thread_content,
+                    thread_order=idx + 1,
+                )
+                self.db.add(thread_post)
+            self.db.commit()
+            self.db.refresh(post)
+
+        logger.info("Created post id=%d format=%s", post.id, post.post_format.value)
         return post
 
     def get_posts(
@@ -64,8 +79,29 @@ class PostService:
             update_data["status"] = PostStatus(update_data["status"])
         if "post_type" in update_data and update_data["post_type"] is not None:
             update_data["post_type"] = PostType(update_data["post_type"])
+        if "post_format" in update_data and update_data["post_format"] is not None:
+            update_data["post_format"] = PostFormat(update_data["post_format"])
+
+        # Handle thread_contents separately
+        thread_contents = update_data.pop("thread_contents", None)
+
         for field, value in update_data.items():
             setattr(post, field, value)
+
+        # Update thread posts if provided
+        if thread_contents is not None:
+            # Remove existing thread posts
+            for tp in post.thread_posts:
+                self.db.delete(tp)
+            # Add new ones
+            for idx, content in enumerate(thread_contents):
+                thread_post = ThreadPost(
+                    parent_post_id=post.id,
+                    content=content,
+                    thread_order=idx + 1,
+                )
+                self.db.add(thread_post)
+
         self.db.commit()
         self.db.refresh(post)
         logger.info("Updated post id=%d", post.id)
@@ -89,14 +125,32 @@ class PostService:
             raise HTTPException(
                 status_code=400, detail="Post has already been published."
             )
-        if len(post.content) > 280:
+        # Format-specific validation
+        fmt = post.post_format if post.post_format else PostFormat.tweet
+        if fmt == PostFormat.tweet and len(post.content) > 280:
             raise HTTPException(
                 status_code=400,
-                detail="Post content exceeds 280 characters.",
+                detail="Tweet content exceeds 280 characters.",
             )
+        if fmt == PostFormat.long_form and len(post.content) > 25000:
+            raise HTTPException(
+                status_code=400,
+                detail="Long-form content exceeds 25,000 characters.",
+            )
+        if fmt == PostFormat.thread:
+            for tp in post.thread_posts:
+                if len(tp.content) > 280:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Thread tweet #{tp.thread_order} exceeds 280 characters.",
+                    )
         return self._attempt_publish(post)
 
     def _attempt_publish(self, post: Post) -> Post:
+        fmt = post.post_format if post.post_format else PostFormat.tweet
+        if fmt == PostFormat.thread and post.thread_posts:
+            return self._publish_thread(post)
+
         last_error = None
         for attempt in range(MAX_RETRIES):
             try:
@@ -140,3 +194,35 @@ class PostService:
             status_code=502,
             detail=f"Failed to publish after {MAX_RETRIES} attempts: {last_error.detail if last_error else 'Unknown error'}",
         )
+
+    def _publish_thread(self, post: Post) -> Post:
+        """Publish a thread as a reply chain."""
+        sorted_tweets = sorted(post.thread_posts, key=lambda t: t.thread_order)
+        reply_to_id = None
+
+        for idx, thread_tweet in enumerate(sorted_tweets):
+            try:
+                tweet_id = self.x_api.post_tweet(
+                    thread_tweet.content, reply_to=reply_to_id
+                )
+                thread_tweet.x_tweet_id = tweet_id
+                if idx == 0:
+                    post.x_tweet_id = tweet_id
+                reply_to_id = tweet_id
+                self.db.commit()
+            except HTTPException as exc:
+                post.status = PostStatus.failed
+                self.db.commit()
+                self.db.refresh(post)
+                logger.error(
+                    "Thread publish failed at tweet #%d for post %d: %s",
+                    idx + 1, post.id, exc.detail,
+                )
+                raise
+
+        post.status = PostStatus.posted
+        post.posted_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(post)
+        logger.info("Published thread post id=%d (%d tweets)", post.id, len(sorted_tweets))
+        return post

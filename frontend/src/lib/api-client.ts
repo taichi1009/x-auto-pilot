@@ -22,6 +22,13 @@ import type {
   AnalyticsTrend,
   ApiUsage,
   HealthCheck,
+  Persona,
+  PersonaCreate,
+  PersonaUpdate,
+  ContentStrategy,
+  ContentStrategyCreate,
+  ContentStrategyUpdate,
+  ImpressionPrediction,
 } from "@/types";
 
 const BASE_URL =
@@ -216,6 +223,67 @@ export const aiApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  predict: (data: { content: string; post_format?: string }) =>
+    fetchApi<ImpressionPrediction>("/api/ai/predict", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+// Persona API
+export const personaApi = {
+  list: () => fetchApi<Persona[]>("/api/persona"),
+
+  getActive: () => fetchApi<Persona | null>("/api/persona/active"),
+
+  create: (data: PersonaCreate) =>
+    fetchApi<Persona>("/api/persona", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: PersonaUpdate) =>
+    fetchApi<Persona>(`/api/persona/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: number) =>
+    fetchApi<void>(`/api/persona/${id}`, { method: "DELETE" }),
+
+  activate: (id: number) =>
+    fetchApi<Persona>(`/api/persona/${id}/activate`, { method: "POST" }),
+};
+
+// Strategy API
+export const strategyApi = {
+  list: () => fetchApi<ContentStrategy[]>("/api/strategy"),
+
+  getActive: () => fetchApi<ContentStrategy | null>("/api/strategy/active"),
+
+  create: (data: ContentStrategyCreate) =>
+    fetchApi<ContentStrategy>("/api/strategy", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: ContentStrategyUpdate) =>
+    fetchApi<ContentStrategy>(`/api/strategy/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: number) =>
+    fetchApi<void>(`/api/strategy/${id}`, { method: "DELETE" }),
+
+  activate: (id: number) =>
+    fetchApi<ContentStrategy>(`/api/strategy/${id}/activate`, { method: "POST" }),
+
+  recommendations: () =>
+    fetchApi<{ strategy_name?: string; message?: string; recommendations: string[] }>(
+      "/api/strategy/recommendations"
+    ),
 };
 
 // Settings API

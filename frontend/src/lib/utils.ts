@@ -98,3 +98,42 @@ export function getPostTypeLabel(type: string): string {
       return type;
   }
 }
+
+export function getPostFormatLabel(format: string): string {
+  switch (format) {
+    case "tweet":
+      return "ツイート";
+    case "long_form":
+      return "長文";
+    case "thread":
+      return "スレッド";
+    default:
+      return format;
+  }
+}
+
+export function getPostFormatColor(format: string): string {
+  switch (format) {
+    case "tweet":
+      return "bg-sky-500/20 text-sky-400 border-sky-500/30";
+    case "long_form":
+      return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+    case "thread":
+      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    default:
+      return "bg-zinc-500/20 text-zinc-400 border-zinc-500/30";
+  }
+}
+
+export function getMaxCharsForFormat(format: string): number {
+  switch (format) {
+    case "tweet":
+      return 280;
+    case "long_form":
+      return 25000;
+    case "thread":
+      return 280;
+    default:
+      return 280;
+  }
+}

@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     JSON,
+    Float,
     ForeignKey,
     func,
 )
@@ -52,6 +53,12 @@ class AnalysisType(str, enum.Enum):
     monthly = "monthly"
 
 
+class PostFormat(str, enum.Enum):
+    tweet = "tweet"
+    long_form = "long_form"
+    thread = "thread"
+
+
 class Post(Base):
     __tablename__ = "posts"
 
@@ -62,6 +69,12 @@ class Post(Base):
     x_tweet_id = Column(String(64), nullable=True)
     posted_at = Column(DateTime, nullable=True)
     retry_count = Column(Integer, default=0, nullable=False)
+    post_format = Column(
+        Enum(PostFormat), default=PostFormat.tweet, nullable=False,
+        server_default="tweet"
+    )
+    predicted_impressions = Column(Integer, nullable=True)
+    persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
     schedule_id = Column(Integer, ForeignKey("schedules.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(
@@ -69,8 +82,13 @@ class Post(Base):
     )
 
     schedule = relationship("Schedule", back_populates="posts")
+    persona = relationship("Persona", back_populates="posts")
     analytics = relationship(
         "PostAnalytics", back_populates="post", cascade="all, delete-orphan"
+    )
+    thread_posts = relationship(
+        "ThreadPost", back_populates="parent_post", cascade="all, delete-orphan",
+        order_by="ThreadPost.thread_order"
     )
 
 
@@ -181,4 +199,78 @@ class ApiUsageLog(Base):
     method = Column(String(10), nullable=False)
     tier_required = Column(String(20), nullable=False)
     status_code = Column(Integer, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+
+class Persona(Base):
+    __tablename__ = "personas"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    personality_traits = Column(JSON, default=list)
+    background_story = Column(Text, nullable=True)
+    target_audience = Column(String(500), nullable=True)
+    expertise_areas = Column(JSON, default=list)
+    communication_style = Column(String(100), nullable=True)
+    tone = Column(String(100), nullable=True)
+    language_patterns = Column(JSON, default=list)
+    example_posts = Column(JSON, default=list)
+    is_active = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    posts = relationship("Post", back_populates="persona")
+
+
+class ContentStrategy(Base):
+    __tablename__ = "content_strategies"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    content_pillars = Column(JSON, default=list)
+    hashtag_groups = Column(JSON, default=dict)
+    posting_frequency = Column(Integer, default=3)
+    optimal_posting_times = Column(JSON, default=list)
+    impression_target = Column(Integer, default=10000)
+    follower_growth_target = Column(Integer, default=5000)
+    engagement_rate_target = Column(Float, default=3.0)
+    content_mix = Column(JSON, default=dict)
+    avoid_topics = Column(JSON, default=list)
+    competitor_accounts = Column(JSON, default=list)
+    is_active = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class ThreadPost(Base):
+    __tablename__ = "thread_posts"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    parent_post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    thread_order = Column(Integer, nullable=False)
+    x_tweet_id = Column(String(64), nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    parent_post = relationship("Post", back_populates="thread_posts")
+
+
+class ImpressionPrediction(Base):
+    __tablename__ = "impression_predictions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
+    content_preview = Column(Text, nullable=False)
+    post_format = Column(Enum(PostFormat), default=PostFormat.tweet, nullable=False)
+    predicted_impressions = Column(Integer, nullable=False)
+    predicted_likes = Column(Integer, default=0)
+    predicted_retweets = Column(Integer, default=0)
+    confidence_score = Column(Float, default=0.5)
+    actual_impressions = Column(Integer, nullable=True)
+    factors = Column(JSON, default=dict)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

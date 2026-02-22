@@ -1,4 +1,5 @@
 import logging
+import random
 from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -6,11 +7,23 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 
 from app.database import SessionLocal
-from app.models.models import Schedule, ScheduleType, PostType, Post, PostStatus
+from app.models.models import (
+    Schedule,
+    ScheduleType,
+    PostType,
+    Post,
+    PostStatus,
+    PostFormat,
+    ImpressionPrediction,
+    PostAnalytics,
+)
 from app.services.post_service import PostService
 from app.services.ai_service import AIService
 from app.services.template_service import TemplateService
 from app.services.analytics_service import AnalyticsService
+from app.services.persona_service import PersonaService
+from app.services.strategy_service import StrategyService
+from app.services.prediction_service import PredictionService
 from app.utils.time_utils import parse_cron_expression
 
 logger = logging.getLogger(__name__)
@@ -27,7 +40,7 @@ def execute_scheduled_post(schedule_id: int) -> None:
             logger.info("Schedule %d is inactive or not found, skipping.", schedule_id)
             return
 
-        content = _generate_content(schedule, db)
+        content, post_format, thread_contents = _generate_content(schedule, db)
         if not content:
             logger.error("Failed to generate content for schedule %d", schedule_id)
             return
@@ -41,7 +54,10 @@ def execute_scheduled_post(schedule_id: int) -> None:
                     "content": content,
                     "status": "draft",
                     "post_type": schedule.post_type.value if schedule.post_type else "original",
+                    "post_format": post_format,
+                    "persona_id": None,
                     "schedule_id": schedule.id,
+                    "thread_contents": thread_contents,
                 },
             )()
         )
@@ -50,7 +66,8 @@ def execute_scheduled_post(schedule_id: int) -> None:
         try:
             post_service.publish_post(post.id)
             logger.info(
-                "Scheduled post published: schedule=%d, post=%d", schedule_id, post.id
+                "Scheduled post published: schedule=%d, post=%d, format=%s",
+                schedule_id, post.id, post_format,
             )
         except Exception as exc:
             logger.error(
@@ -70,28 +87,75 @@ def execute_scheduled_post(schedule_id: int) -> None:
         db.close()
 
 
-def _generate_content(schedule: Schedule, db) -> str:
-    """Generate post content based on the schedule configuration."""
+def _generate_content(schedule: Schedule, db) -> tuple:
+    """Generate post content based on the schedule configuration.
+
+    Returns (content, post_format, thread_contents).
+    """
     if schedule.post_type == PostType.ai_generated and schedule.ai_prompt:
         ai_service = AIService()
-        posts = ai_service.generate_posts(
+        persona_service = PersonaService(db)
+        strategy_service = StrategyService(db)
+
+        persona = persona_service.get_active_persona()
+        strategy = strategy_service.get_active_strategy()
+
+        # Determine format based on content_mix from strategy
+        post_format = _pick_format_from_strategy(strategy)
+
+        result = ai_service.generate_posts(
             genre=schedule.ai_prompt,
             style="casual",
             count=1,
+            persona=persona,
+            strategy=strategy,
+            post_format=post_format,
+            thread_length=5,
         )
-        if posts:
-            return posts[0]
-        return ""
+
+        if post_format == "thread":
+            threads = result.get("threads", [])
+            if threads:
+                return (threads[0][0] if threads[0] else "", "thread", threads[0])
+            return ("", "thread", [])
+        else:
+            posts = result.get("posts", [])
+            if posts:
+                return (posts[0], post_format, None)
+            return ("", post_format, None)
 
     if schedule.post_type == PostType.template and schedule.template_id:
         template_service = TemplateService(db)
         template = template_service.get_template(schedule.template_id)
-        return template.content_pattern
+        return (template.content_pattern, "tweet", None)
 
     if schedule.ai_prompt:
-        return schedule.ai_prompt
+        return (schedule.ai_prompt, "tweet", None)
 
-    return ""
+    return ("", "tweet", None)
+
+
+def _pick_format_from_strategy(strategy) -> str:
+    """Pick a post format based on the content_mix ratio from strategy."""
+    if not strategy or not strategy.content_mix:
+        return "tweet"
+
+    content_mix = strategy.content_mix
+    tweet_pct = content_mix.get("tweet", 70)
+    thread_pct = content_mix.get("thread", 20)
+    long_form_pct = content_mix.get("long_form", 10)
+
+    total = tweet_pct + thread_pct + long_form_pct
+    if total <= 0:
+        return "tweet"
+
+    roll = random.random() * total
+    if roll < tweet_pct:
+        return "tweet"
+    elif roll < tweet_pct + thread_pct:
+        return "thread"
+    else:
+        return "long_form"
 
 
 def collect_analytics_job() -> None:
@@ -103,6 +167,41 @@ def collect_analytics_job() -> None:
         logger.info("Analytics collection job completed: %s", result)
     except Exception as exc:
         logger.error("Analytics collection job failed: %s", exc)
+    finally:
+        db.close()
+
+
+def track_prediction_accuracy() -> None:
+    """Periodic job to update prediction records with actual impression data."""
+    db = SessionLocal()
+    try:
+        # Find predictions that have a post_id but no actual_impressions
+        predictions = (
+            db.query(ImpressionPrediction)
+            .filter(
+                ImpressionPrediction.post_id.isnot(None),
+                ImpressionPrediction.actual_impressions.is_(None),
+            )
+            .all()
+        )
+
+        updated = 0
+        for pred in predictions:
+            # Get latest analytics for this post
+            analytics = (
+                db.query(PostAnalytics)
+                .filter(PostAnalytics.post_id == pred.post_id)
+                .order_by(PostAnalytics.collected_at.desc())
+                .first()
+            )
+            if analytics and analytics.impressions > 0:
+                pred.actual_impressions = analytics.impressions
+                updated += 1
+
+        db.commit()
+        logger.info("Prediction accuracy tracking: updated %d records", updated)
+    except Exception as exc:
+        logger.error("Prediction accuracy tracking failed: %s", exc)
     finally:
         db.close()
 
@@ -166,7 +265,8 @@ def sync_schedules() -> None:
                     logger.info("Added one-time job: %s", job_id)
 
         # Remove jobs for deactivated or deleted schedules
-        stale_jobs = existing_job_ids - schedule_job_ids - {"analytics_collector", "schedule_sync"}
+        system_jobs = {"analytics_collector", "schedule_sync", "prediction_tracker"}
+        stale_jobs = existing_job_ids - schedule_job_ids - system_jobs
         for job_id in stale_jobs:
             if job_id.startswith("schedule_"):
                 scheduler.remove_job(job_id)
@@ -199,6 +299,15 @@ def start_scheduler() -> None:
         CronTrigger(minute="*/5"),
         id="schedule_sync",
         name="Schedule Sync",
+        replace_existing=True,
+    )
+
+    # Add prediction accuracy tracking job every 12 hours
+    scheduler.add_job(
+        track_prediction_accuracy,
+        CronTrigger(hour="*/12"),
+        id="prediction_tracker",
+        name="Prediction Accuracy Tracker",
         replace_existing=True,
     )
 

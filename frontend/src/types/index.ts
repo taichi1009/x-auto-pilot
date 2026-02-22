@@ -1,13 +1,30 @@
+// Post Format
+export type PostFormat = "tweet" | "long_form" | "thread";
+
+// Thread Post
+export interface ThreadPost {
+  id: number;
+  parent_post_id: number;
+  content: string;
+  thread_order: number;
+  x_tweet_id?: string | null;
+  created_at: string;
+}
+
 // Post types
 export interface Post {
   id: number;
   content: string;
   status: "draft" | "scheduled" | "posted" | "failed";
   post_type: "original" | "ai_generated" | "template";
+  post_format: PostFormat;
   x_tweet_id?: string | null;
   posted_at?: string | null;
   retry_count: number;
+  predicted_impressions?: number | null;
+  persona_id?: number | null;
   schedule_id?: number | null;
+  thread_posts: ThreadPost[];
   created_at: string;
   updated_at: string;
 }
@@ -16,14 +33,20 @@ export interface PostCreate {
   content: string;
   status?: string;
   post_type?: string;
+  post_format?: PostFormat;
+  persona_id?: number | null;
   schedule_id?: number | null;
+  thread_contents?: string[];
 }
 
 export interface PostUpdate {
   content?: string;
   status?: string;
   post_type?: string;
+  post_format?: PostFormat;
+  persona_id?: number | null;
   schedule_id?: number | null;
+  thread_contents?: string[];
 }
 
 // Template types
@@ -151,23 +174,130 @@ export interface DashboardData {
   recent_posts: Post[];
 }
 
+// Persona types
+export interface Persona {
+  id: number;
+  name: string;
+  description?: string | null;
+  personality_traits: string[];
+  background_story?: string | null;
+  target_audience?: string | null;
+  expertise_areas: string[];
+  communication_style?: string | null;
+  tone?: string | null;
+  language_patterns: string[];
+  example_posts: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PersonaCreate {
+  name: string;
+  description?: string;
+  personality_traits?: string[];
+  background_story?: string;
+  target_audience?: string;
+  expertise_areas?: string[];
+  communication_style?: string;
+  tone?: string;
+  language_patterns?: string[];
+  example_posts?: string[];
+}
+
+export interface PersonaUpdate {
+  name?: string;
+  description?: string;
+  personality_traits?: string[];
+  background_story?: string;
+  target_audience?: string;
+  expertise_areas?: string[];
+  communication_style?: string;
+  tone?: string;
+  language_patterns?: string[];
+  example_posts?: string[];
+}
+
+// Content Strategy types
+export interface ContentStrategy {
+  id: number;
+  name: string;
+  content_pillars: string[];
+  hashtag_groups: Record<string, string[]>;
+  posting_frequency: number;
+  optimal_posting_times: string[];
+  impression_target: number;
+  follower_growth_target: number;
+  engagement_rate_target: number;
+  content_mix: Record<string, number>;
+  avoid_topics: string[];
+  competitor_accounts: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContentStrategyCreate {
+  name: string;
+  content_pillars?: string[];
+  hashtag_groups?: Record<string, string[]>;
+  posting_frequency?: number;
+  optimal_posting_times?: string[];
+  impression_target?: number;
+  follower_growth_target?: number;
+  engagement_rate_target?: number;
+  content_mix?: Record<string, number>;
+  avoid_topics?: string[];
+  competitor_accounts?: string[];
+}
+
+export interface ContentStrategyUpdate {
+  name?: string;
+  content_pillars?: string[];
+  hashtag_groups?: Record<string, string[]>;
+  posting_frequency?: number;
+  optimal_posting_times?: string[];
+  impression_target?: number;
+  follower_growth_target?: number;
+  engagement_rate_target?: number;
+  content_mix?: Record<string, number>;
+  avoid_topics?: string[];
+  competitor_accounts?: string[];
+}
+
+// Impression Prediction
+export interface ImpressionPrediction {
+  predicted_impressions: number;
+  predicted_likes: number;
+  predicted_retweets: number;
+  confidence_score: number;
+  factors: Record<string, unknown>;
+  suggestions: string[];
+}
+
 // AI types
 export interface AIGenerateRequest {
   genre: string;
   style: string;
   count: number;
   custom_prompt?: string | null;
+  post_format?: PostFormat;
+  use_persona?: boolean;
+  thread_length?: number;
 }
 
 export interface AIGenerateResponse {
   posts: string[];
+  threads?: string[][] | null;
   genre: string;
   style: string;
+  post_format: PostFormat;
 }
 
 export interface AIImproveRequest {
   content: string;
   feedback?: string | null;
+  post_format?: PostFormat;
 }
 
 export interface AIImproveResponse {

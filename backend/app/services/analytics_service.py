@@ -17,26 +17,30 @@ class AnalyticsService:
         self.db = db
         self.x_api = XApiService()
 
-    def get_overview(self, days: int = 30) -> Dict[str, Any]:
+    def get_overview(self, days: int = 30, user_id: Optional[int] = None) -> Dict[str, Any]:
         cutoff = datetime.utcnow() - timedelta(days=days)
 
-        total_posts = (
+        total_posts_query = (
             self.db.query(Post)
             .filter(Post.status == PostStatus.posted)
-            .count()
         )
+        if user_id is not None:
+            total_posts_query = total_posts_query.filter(Post.user_id == user_id)
+        total_posts = total_posts_query.count()
 
-        recent_posts = (
+        recent_posts_query = (
             self.db.query(Post)
             .filter(
                 Post.status == PostStatus.posted,
                 Post.posted_at >= cutoff,
             )
-            .count()
         )
+        if user_id is not None:
+            recent_posts_query = recent_posts_query.filter(Post.user_id == user_id)
+        recent_posts = recent_posts_query.count()
 
         # Aggregate analytics for the period
-        analytics = (
+        analytics_query = (
             self.db.query(
                 func.sum(PostAnalytics.impressions).label("total_impressions"),
                 func.sum(PostAnalytics.likes).label("total_likes"),
@@ -48,8 +52,10 @@ class AnalyticsService:
                 func.avg(PostAnalytics.likes).label("avg_likes"),
             )
             .filter(PostAnalytics.collected_at >= cutoff)
-            .first()
         )
+        if user_id is not None:
+            analytics_query = analytics_query.join(Post, PostAnalytics.post_id == Post.id).filter(Post.user_id == user_id)
+        analytics = analytics_query.first()
 
         return {
             "period_days": days,
@@ -65,8 +71,11 @@ class AnalyticsService:
             "avg_likes": round(float(analytics.avg_likes or 0), 1),
         }
 
-    def get_post_analytics(self, post_id: int) -> List[PostAnalytics]:
-        post = self.db.query(Post).filter(Post.id == post_id).first()
+    def get_post_analytics(self, post_id: int, user_id: Optional[int] = None) -> List[PostAnalytics]:
+        post_query = self.db.query(Post).filter(Post.id == post_id)
+        if user_id is not None:
+            post_query = post_query.filter(Post.user_id == user_id)
+        post = post_query.first()
         if not post:
             raise HTTPException(status_code=404, detail=f"Post {post_id} not found.")
 
@@ -78,11 +87,11 @@ class AnalyticsService:
         )
         return analytics
 
-    def get_trends(self, days: int = 30) -> List[Dict[str, Any]]:
+    def get_trends(self, days: int = 30, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
         cutoff = datetime.utcnow() - timedelta(days=days)
 
         # Get daily aggregated metrics
-        daily_metrics = (
+        daily_metrics_query = (
             self.db.query(
                 func.date(PostAnalytics.collected_at).label("date"),
                 func.sum(PostAnalytics.impressions).label("impressions"),
@@ -92,6 +101,11 @@ class AnalyticsService:
                 func.count(PostAnalytics.id).label("posts_tracked"),
             )
             .filter(PostAnalytics.collected_at >= cutoff)
+        )
+        if user_id is not None:
+            daily_metrics_query = daily_metrics_query.join(Post, PostAnalytics.post_id == Post.id).filter(Post.user_id == user_id)
+        daily_metrics = (
+            daily_metrics_query
             .group_by(func.date(PostAnalytics.collected_at))
             .order_by(func.date(PostAnalytics.collected_at))
             .all()
@@ -111,16 +125,18 @@ class AnalyticsService:
             )
         return trends
 
-    def collect_analytics(self) -> Dict[str, Any]:
+    def collect_analytics(self, user_id: Optional[int] = None) -> Dict[str, Any]:
         # Collect analytics for all posted tweets
-        posted_posts = (
+        posted_posts_query = (
             self.db.query(Post)
             .filter(
                 Post.status == PostStatus.posted,
                 Post.x_tweet_id.isnot(None),
             )
-            .all()
         )
+        if user_id is not None:
+            posted_posts_query = posted_posts_query.filter(Post.user_id == user_id)
+        posted_posts = posted_posts_query.all()
 
         collected = 0
         errors = 0

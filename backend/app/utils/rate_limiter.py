@@ -26,6 +26,11 @@ TIER_LIMITS: Dict[str, Dict[str, int]] = {
         "reads_per_month": 1000000,
         "follows_per_day": 1000,
     },
+    "enterprise": {
+        "posts_per_month": 1000000,
+        "reads_per_month": 10000000,
+        "follows_per_day": 5000,
+    },
 }
 
 # Mapping from endpoint category to the limit key
@@ -41,7 +46,11 @@ class RateLimiter:
         self._call_log: Dict[str, List[datetime]] = defaultdict(list)
         self._lock = Lock()
 
-    def check_limit(self, endpoint_category: str, tier: str) -> bool:
+    def check_limit(self, endpoint_category: str, tier: str, is_admin: bool = False) -> bool:
+        # Admin users bypass all rate limits
+        if is_admin:
+            return True
+
         limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
         limit_key = ENDPOINT_LIMIT_MAP.get(endpoint_category)
         if not limit_key:

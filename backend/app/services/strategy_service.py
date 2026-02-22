@@ -14,8 +14,9 @@ class StrategyService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def create_strategy(self, data: dict) -> ContentStrategy:
+    def create_strategy(self, data: dict, user_id: Optional[int] = None) -> ContentStrategy:
         strategy = ContentStrategy(**data)
+        strategy.user_id = user_id
         self.db.add(strategy)
         self.db.commit()
         self.db.refresh(strategy)
@@ -23,9 +24,11 @@ class StrategyService:
         return strategy
 
     def get_strategies(
-        self, skip: int = 0, limit: int = 20
+        self, skip: int = 0, limit: int = 20, user_id: Optional[int] = None
     ) -> Tuple[List[ContentStrategy], int]:
         query = self.db.query(ContentStrategy)
+        if user_id is not None:
+            query = query.filter(ContentStrategy.user_id == user_id)
         total = query.count()
         strategies = (
             query.order_by(desc(ContentStrategy.created_at))
@@ -35,20 +38,22 @@ class StrategyService:
         )
         return strategies, total
 
-    def get_strategy(self, strategy_id: int) -> ContentStrategy:
-        strategy = (
+    def get_strategy(self, strategy_id: int, user_id: Optional[int] = None) -> ContentStrategy:
+        query = (
             self.db.query(ContentStrategy)
             .filter(ContentStrategy.id == strategy_id)
-            .first()
         )
+        if user_id is not None:
+            query = query.filter(ContentStrategy.user_id == user_id)
+        strategy = query.first()
         if not strategy:
             raise HTTPException(
                 status_code=404, detail=f"Strategy {strategy_id} not found."
             )
         return strategy
 
-    def update_strategy(self, strategy_id: int, data: dict) -> ContentStrategy:
-        strategy = self.get_strategy(strategy_id)
+    def update_strategy(self, strategy_id: int, data: dict, user_id: Optional[int] = None) -> ContentStrategy:
+        strategy = self.get_strategy(strategy_id, user_id=user_id)
         for field, value in data.items():
             setattr(strategy, field, value)
         self.db.commit()
@@ -56,34 +61,39 @@ class StrategyService:
         logger.info("Updated strategy id=%d", strategy.id)
         return strategy
 
-    def delete_strategy(self, strategy_id: int) -> bool:
-        strategy = self.get_strategy(strategy_id)
+    def delete_strategy(self, strategy_id: int, user_id: Optional[int] = None) -> bool:
+        strategy = self.get_strategy(strategy_id, user_id=user_id)
         self.db.delete(strategy)
         self.db.commit()
         logger.info("Deleted strategy id=%d", strategy_id)
         return True
 
-    def get_active_strategy(self) -> Optional[ContentStrategy]:
-        return (
+    def get_active_strategy(self, user_id: Optional[int] = None) -> Optional[ContentStrategy]:
+        query = (
             self.db.query(ContentStrategy)
             .filter(ContentStrategy.is_active == True)
-            .first()
         )
+        if user_id is not None:
+            query = query.filter(ContentStrategy.user_id == user_id)
+        return query.first()
 
-    def activate_strategy(self, strategy_id: int) -> ContentStrategy:
-        # Deactivate all strategies
-        self.db.query(ContentStrategy).update({"is_active": False})
+    def activate_strategy(self, strategy_id: int, user_id: Optional[int] = None) -> ContentStrategy:
+        # Deactivate all strategies (scoped by user_id if provided)
+        deactivate_query = self.db.query(ContentStrategy)
+        if user_id is not None:
+            deactivate_query = deactivate_query.filter(ContentStrategy.user_id == user_id)
+        deactivate_query.update({"is_active": False})
         # Activate the specified one
-        strategy = self.get_strategy(strategy_id)
+        strategy = self.get_strategy(strategy_id, user_id=user_id)
         strategy.is_active = True
         self.db.commit()
         self.db.refresh(strategy)
         logger.info("Activated strategy id=%d", strategy.id)
         return strategy
 
-    def get_recommendations(self) -> Dict[str, Any]:
+    def get_recommendations(self, user_id: Optional[int] = None) -> Dict[str, Any]:
         """Return basic recommendations based on active strategy."""
-        strategy = self.get_active_strategy()
+        strategy = self.get_active_strategy(user_id=user_id)
         if not strategy:
             return {
                 "message": "No active strategy. Create and activate a strategy first.",

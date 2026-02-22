@@ -208,10 +208,10 @@ export default function PersonaPage() {
   const renderPersonaCard = (persona: Persona, isActive: boolean) => (
     <Card
       key={persona.id}
-      className={`bg-zinc-900 transition-colors ${
+      className={`bg-card transition-colors ${
         isActive
           ? "border-blue-500 border-2"
-          : "border-zinc-800 hover:border-zinc-700"
+          : "border-border hover:border-border"
       }`}
     >
       <CardContent className="p-5 space-y-3">
@@ -219,7 +219,7 @@ export default function PersonaPage() {
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-zinc-100 truncate">
+              <h3 className="font-semibold text-foreground truncate">
                 {persona.name}
               </h3>
               {isActive && (
@@ -230,7 +230,7 @@ export default function PersonaPage() {
               )}
             </div>
             {persona.description && (
-              <p className="text-sm text-zinc-400 mt-1 line-clamp-2">
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                 {persona.description}
               </p>
             )}
@@ -240,7 +240,7 @@ export default function PersonaPage() {
         {/* Personality traits */}
         {(persona.personality_traits ?? []).length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs text-zinc-500 font-medium">
+            <p className="text-xs text-muted-foreground font-medium">
               パーソナリティ
             </p>
             <div className="flex flex-wrap gap-1">
@@ -260,10 +260,10 @@ export default function PersonaPage() {
         {/* Target audience */}
         {persona.target_audience && (
           <div className="space-y-1">
-            <p className="text-xs text-zinc-500 font-medium">
+            <p className="text-xs text-muted-foreground font-medium">
               ターゲット
             </p>
-            <p className="text-sm text-zinc-300">{persona.target_audience}</p>
+            <p className="text-sm text-foreground/80">{persona.target_audience}</p>
           </div>
         )}
 
@@ -290,7 +290,7 @@ export default function PersonaPage() {
         {/* Expertise areas */}
         {(persona.expertise_areas ?? []).length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs text-zinc-500 font-medium">専門分野</p>
+            <p className="text-xs text-muted-foreground font-medium">専門分野</p>
             <div className="flex flex-wrap gap-1">
               {persona.expertise_areas.map((area) => (
                 <Badge
@@ -306,7 +306,7 @@ export default function PersonaPage() {
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+        <div className="flex items-center gap-2 pt-2 border-t border-border">
           {!isActive && (
             <Button
               variant="ghost"
@@ -327,7 +327,7 @@ export default function PersonaPage() {
             variant="ghost"
             size="sm"
             onClick={() => openEditDialog(persona)}
-            className="text-zinc-400 hover:text-zinc-100 gap-1.5"
+            className="text-muted-foreground hover:text-foreground gap-1.5"
           >
             <Pencil className="h-3.5 w-3.5" />
             編集
@@ -356,8 +356,8 @@ export default function PersonaPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">ペルソナ管理</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">ペルソナ管理</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             投稿に使用するペルソナを管理します。有効なペルソナがAI生成時に適用されます。
           </p>
         </div>
@@ -376,12 +376,12 @@ export default function PersonaPage() {
       {/* Loading state */}
       {loading ? (
         <div className="space-y-4">
-          <div className="h-48 rounded-lg bg-zinc-800 animate-pulse" />
+          <div className="h-48 rounded-lg bg-muted animate-pulse" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
               <div
                 key={i}
-                className="h-48 rounded-lg bg-zinc-800 animate-pulse"
+                className="h-48 rounded-lg bg-muted animate-pulse"
               />
             ))}
           </div>
@@ -389,11 +389,11 @@ export default function PersonaPage() {
       ) : (personas ?? []).length === 0 ? (
         /* Empty state */
         <div className="text-center py-16">
-          <User className="h-10 w-10 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-zinc-300 mb-2">
+          <User className="h-10 w-10 text-muted-foreground/60 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground/80 mb-2">
             ペルソナがありません
           </h3>
-          <p className="text-sm text-zinc-500 mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             ペルソナを作成して、AI生成の投稿に個性を持たせましょう
           </p>
           <Button onClick={openCreateDialog} className="gap-2">
@@ -406,7 +406,7 @@ export default function PersonaPage() {
           {/* Active persona */}
           {activePersona && (
             <div className="space-y-2">
-              <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 有効なペルソナ
               </h2>
               {renderPersonaCard(activePersona, true)}
@@ -416,7 +416,7 @@ export default function PersonaPage() {
           {/* All other personas */}
           {inactivePersonas.length > 0 && (
             <div className="space-y-2">
-              <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 その他のペルソナ
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -431,9 +431,9 @@ export default function PersonaPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-zinc-100">
+            <DialogTitle className="text-foreground">
               {editingPersona ? "ペルソナを編集" : "新規ペルソナ"}
             </DialogTitle>
           </DialogHeader>
@@ -441,30 +441,30 @@ export default function PersonaPage() {
           <div className="space-y-4">
             {/* Name */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">ペルソナ名</Label>
+              <Label className="text-foreground/80">ペルソナ名</Label>
               <Input
                 placeholder="例: テック系インフルエンサー"
                 value={formData.name}
                 onChange={(e) => updateField("name", e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">説明</Label>
+              <Label className="text-foreground/80">説明</Label>
               <Textarea
                 placeholder="このペルソナの概要を記述してください"
                 value={formData.description}
                 onChange={(e) => updateField("description", e.target.value)}
                 rows={2}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100 resize-none"
+                className="bg-muted border-border text-foreground resize-none"
               />
             </div>
 
             {/* Personality traits */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 パーソナリティ特性 (カンマ区切り)
               </Label>
               <Input
@@ -473,7 +473,7 @@ export default function PersonaPage() {
                 onChange={(e) =>
                   updateField("personality_traits", e.target.value)
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
               {formData.personality_traits && (
                 <div className="flex flex-wrap gap-1">
@@ -496,7 +496,7 @@ export default function PersonaPage() {
 
             {/* Background story */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">バックグラウンドストーリー</Label>
+              <Label className="text-foreground/80">バックグラウンドストーリー</Label>
               <Textarea
                 placeholder="このペルソナの背景や経歴を記述してください"
                 value={formData.background_story}
@@ -504,26 +504,26 @@ export default function PersonaPage() {
                   updateField("background_story", e.target.value)
                 }
                 rows={3}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100 resize-none"
+                className="bg-muted border-border text-foreground resize-none"
               />
             </div>
 
             {/* Target audience */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">ターゲットオーディエンス</Label>
+              <Label className="text-foreground/80">ターゲットオーディエンス</Label>
               <Input
                 placeholder="例: 20-30代のエンジニア"
                 value={formData.target_audience}
                 onChange={(e) =>
                   updateField("target_audience", e.target.value)
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {/* Expertise areas */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 専門分野 (カンマ区切り)
               </Label>
               <Input
@@ -532,7 +532,7 @@ export default function PersonaPage() {
                 onChange={(e) =>
                   updateField("expertise_areas", e.target.value)
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
               {formData.expertise_areas && (
                 <div className="flex flex-wrap gap-1">
@@ -557,7 +557,7 @@ export default function PersonaPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Communication style */}
               <div className="space-y-2">
-                <Label className="text-zinc-300">
+                <Label className="text-foreground/80">
                   コミュニケーションスタイル
                 </Label>
                 <Select
@@ -566,15 +566,15 @@ export default function PersonaPage() {
                     updateField("communication_style", value)
                   }
                 >
-                  <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-zinc-100">
+                  <SelectTrigger className="w-full bg-muted border-border text-foreground">
                     <SelectValue placeholder="スタイルを選択" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectContent className="bg-muted border-border">
                     {COMMUNICATION_STYLES.map((style) => (
                       <SelectItem
                         key={style.value}
                         value={style.value}
-                        className="text-zinc-100 focus:bg-zinc-700 focus:text-zinc-100"
+                        className="text-foreground focus:bg-muted focus:text-foreground"
                       >
                         {style.label}
                       </SelectItem>
@@ -585,20 +585,20 @@ export default function PersonaPage() {
 
               {/* Tone */}
               <div className="space-y-2">
-                <Label className="text-zinc-300">トーン</Label>
+                <Label className="text-foreground/80">トーン</Label>
                 <Select
                   value={formData.tone}
                   onValueChange={(value) => updateField("tone", value)}
                 >
-                  <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-zinc-100">
+                  <SelectTrigger className="w-full bg-muted border-border text-foreground">
                     <SelectValue placeholder="トーンを選択" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectContent className="bg-muted border-border">
                     {TONES.map((tone) => (
                       <SelectItem
                         key={tone.value}
                         value={tone.value}
-                        className="text-zinc-100 focus:bg-zinc-700 focus:text-zinc-100"
+                        className="text-foreground focus:bg-muted focus:text-foreground"
                       >
                         {tone.label}
                       </SelectItem>
@@ -610,7 +610,7 @@ export default function PersonaPage() {
 
             {/* Language patterns */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 言語パターン (カンマ区切り)
               </Label>
               <Input
@@ -619,13 +619,13 @@ export default function PersonaPage() {
                 onChange={(e) =>
                   updateField("language_patterns", e.target.value)
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {/* Example posts */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 投稿例 (1行につき1投稿)
               </Label>
               <Textarea
@@ -635,7 +635,7 @@ export default function PersonaPage() {
                 value={formData.example_posts}
                 onChange={(e) => updateField("example_posts", e.target.value)}
                 rows={4}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100 resize-none"
+                className="bg-muted border-border text-foreground resize-none"
               />
             </div>
           </div>
@@ -644,7 +644,7 @@ export default function PersonaPage() {
             <Button
               variant="ghost"
               onClick={() => setDialogOpen(false)}
-              className="text-zinc-400"
+              className="text-muted-foreground"
             >
               キャンセル
             </Button>

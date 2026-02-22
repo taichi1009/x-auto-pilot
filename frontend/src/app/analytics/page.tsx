@@ -113,31 +113,31 @@ export default function AnalyticsPage() {
             value={String(days)}
             onValueChange={(v) => setDays(Number(v))}
           >
-            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100 w-36">
+            <SelectTrigger className="bg-muted border-border text-foreground w-36">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-800 border-zinc-700">
+            <SelectContent className="bg-muted border-border">
               <SelectItem
                 value="7"
-                className="text-zinc-100 focus:bg-zinc-700"
+                className="text-foreground focus:bg-muted"
               >
                 過去7日間
               </SelectItem>
               <SelectItem
                 value="14"
-                className="text-zinc-100 focus:bg-zinc-700"
+                className="text-foreground focus:bg-muted"
               >
                 過去14日間
               </SelectItem>
               <SelectItem
                 value="30"
-                className="text-zinc-100 focus:bg-zinc-700"
+                className="text-foreground focus:bg-muted"
               >
                 過去30日間
               </SelectItem>
               <SelectItem
                 value="90"
-                className="text-zinc-100 focus:bg-zinc-700"
+                className="text-foreground focus:bg-muted"
               >
                 過去90日間
               </SelectItem>
@@ -207,15 +207,15 @@ export default function AnalyticsPage() {
 
       {/* Top post */}
       {overview?.top_post && (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-400" />
               トップ投稿
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-foreground/80">
               {truncateText(overview.top_post.content, 200)}
             </p>
           </CardContent>
@@ -226,10 +226,10 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Engagement trend chart */}
         {trendsLoading ? (
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="h-[300px] flex items-center justify-center">
-                <Loader2 className="h-8 w-8 text-zinc-500 animate-spin" />
+                <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
               </div>
             </CardContent>
           </Card>
@@ -238,9 +238,9 @@ export default function AnalyticsPage() {
         )}
 
         {/* Engagement by post type */}
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-zinc-100">
+            <CardTitle className="text-foreground">
               投稿タイプ別エンゲージメント
             </CardTitle>
           </CardHeader>
@@ -295,9 +295,9 @@ export default function AnalyticsPage() {
       </div>
 
       {/* PDCA Section */}
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <ListChecks className="h-4 w-4" />
             PDCA分析
           </CardTitle>
@@ -308,17 +308,17 @@ export default function AnalyticsPage() {
               {[...Array(3)].map((_, i) => (
                 <div
                   key={i}
-                  className="h-8 rounded bg-zinc-800 animate-pulse"
+                  className="h-8 rounded bg-muted animate-pulse"
                 />
               ))}
             </div>
           ) : pdcaLog ? (
             <div className="space-y-4">
               <div>
-                <h4 className="text-sm font-medium text-zinc-300 mb-2">
+                <h4 className="text-sm font-medium text-foreground/80 mb-2">
                   分析タイプ: {pdcaLog.analysis_type}
                 </h4>
-                <div className="p-3 rounded-lg bg-zinc-800/50 text-sm text-zinc-400">
+                <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
                   <pre className="whitespace-pre-wrap">
                     {JSON.stringify(pdcaLog.analysis_result, null, 2)}
                   </pre>
@@ -327,14 +327,14 @@ export default function AnalyticsPage() {
 
               {pdcaLog.recommendations.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-zinc-300 mb-2">
+                  <h4 className="text-sm font-medium text-foreground/80 mb-2">
                     レコメンデーション
                   </h4>
                   <ul className="space-y-2">
                     {pdcaLog.recommendations.map((rec, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-2 text-sm text-zinc-400"
+                        className="flex items-start gap-2 text-sm text-muted-foreground"
                       >
                         <span className="text-blue-400 mt-0.5">-</span>
                         <span>{String(rec)}</span>
@@ -346,8 +346,8 @@ export default function AnalyticsPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <MessageCircle className="h-8 w-8 text-zinc-600 mx-auto mb-3" />
-              <p className="text-zinc-400 text-sm">
+              <MessageCircle className="h-8 w-8 text-muted-foreground/60 mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">
                 まだPDCA分析データがありません。データ収集を実行してください。
               </p>
             </div>

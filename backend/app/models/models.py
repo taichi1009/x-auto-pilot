@@ -19,6 +19,18 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
+class UserRole(str, enum.Enum):
+    admin = "admin"
+    user = "user"
+
+
+class SubscriptionTier(str, enum.Enum):
+    free = "free"
+    basic = "basic"
+    pro = "pro"
+    enterprise = "enterprise"
+
+
 class PostStatus(str, enum.Enum):
     draft = "draft"
     scheduled = "scheduled"
@@ -59,6 +71,26 @@ class PostFormat(str, enum.Enum):
     thread = "thread"
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
+    role = Column(Enum(UserRole), default=UserRole.user, nullable=False)
+    subscription_tier = Column(
+        Enum(SubscriptionTier), default=SubscriptionTier.free, nullable=False
+    )
+    stripe_customer_id = Column(String(255), nullable=True)
+    stripe_subscription_id = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class Post(Base):
     __tablename__ = "posts"
 
@@ -74,6 +106,8 @@ class Post(Base):
         server_default="tweet"
     )
     predicted_impressions = Column(Integer, nullable=True)
+    image_url = Column(Text, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     persona_id = Column(Integer, ForeignKey("personas.id"), nullable=True)
     schedule_id = Column(Integer, ForeignKey("schedules.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -97,6 +131,7 @@ class Template(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(255), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     content_pattern = Column(Text, nullable=False)
     variables = Column(JSON, default=list)
     category = Column(String(100), nullable=True)
@@ -114,6 +149,7 @@ class Schedule(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(255), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     schedule_type = Column(Enum(ScheduleType), nullable=False)
     cron_expression = Column(String(100), nullable=True)
     scheduled_at = Column(DateTime, nullable=True)
@@ -134,6 +170,7 @@ class FollowTarget(Base):
     __tablename__ = "follow_targets"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     x_user_id = Column(String(64), unique=True, nullable=False)
     x_username = Column(String(255), nullable=False)
     action = Column(Enum(FollowAction), default=FollowAction.follow, nullable=False)
@@ -169,6 +206,7 @@ class AppSetting(Base):
     __tablename__ = "app_settings"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     key = Column(String(255), unique=True, nullable=False, index=True)
     value = Column(Text, nullable=False)
     category = Column(String(100), nullable=True)
@@ -206,6 +244,7 @@ class Persona(Base):
     __tablename__ = "personas"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     personality_traits = Column(JSON, default=list)
@@ -229,6 +268,7 @@ class ContentStrategy(Base):
     __tablename__ = "content_strategies"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     name = Column(String(255), nullable=False)
     content_pillars = Column(JSON, default=list)
     hashtag_groups = Column(JSON, default=dict)

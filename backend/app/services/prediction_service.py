@@ -54,13 +54,7 @@ class PredictionService:
         )
 
         try:
-            message = self.ai_service.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=1024,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            response_text = message.content[0].text.strip()
+            response_text = self.ai_service.call_llm(system_prompt, user_prompt, 1024)
             result = json.loads(response_text)
 
             prediction = {

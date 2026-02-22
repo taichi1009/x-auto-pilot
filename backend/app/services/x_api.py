@@ -33,6 +33,7 @@ class XApiService:
     def __init__(self) -> None:
         self.current_tier = settings.X_API_TIER.lower()
         self._client: Optional[tweepy.Client] = None
+        self._api_v1: Optional[tweepy.API] = None
 
     @property
     def client(self) -> tweepy.Client:
@@ -46,6 +47,30 @@ class XApiService:
                 wait_on_rate_limit=True,
             )
         return self._client
+
+    @property
+    def api_v1(self) -> tweepy.API:
+        """Tweepy v1.1 API for media upload."""
+        if self._api_v1 is None:
+            auth = tweepy.OAuth1UserHandler(
+                consumer_key=settings.X_API_KEY or "",
+                consumer_secret=settings.X_API_SECRET or "",
+                access_token=settings.X_ACCESS_TOKEN or "",
+                access_token_secret=settings.X_ACCESS_TOKEN_SECRET or "",
+            )
+            self._api_v1 = tweepy.API(auth, wait_on_rate_limit=True)
+        return self._api_v1
+
+    def upload_media(self, filepath: str) -> Optional[str]:
+        """Upload media via v1.1 API and return the media_id string."""
+        try:
+            media = self.api_v1.media_upload(filename=filepath)
+            media_id = str(media.media_id)
+            logger.info("Media uploaded: media_id=%s", media_id)
+            return media_id
+        except tweepy.TweepyException as exc:
+            logger.error("Failed to upload media: %s", exc)
+            return None
 
     def require_tier(self, min_tier: str) -> None:
         current_level = TIER_ORDER.get(self.current_tier, 0)
@@ -63,7 +88,8 @@ class XApiService:
         return TIER_LIMITS.get(self.current_tier, TIER_LIMITS["free"])
 
     def post_tweet(
-        self, content: str, reply_to: Optional[str] = None
+        self, content: str, reply_to: Optional[str] = None,
+        media_ids: Optional[List[str]] = None,
     ) -> str:
         # Long-form posts (X Premium) allow up to 25,000 chars
         # Regular tweets max 280
@@ -73,9 +99,11 @@ class XApiService:
                 detail="Post content exceeds 25,000 characters.",
             )
         try:
-            kwargs = {"text": content}
+            kwargs: Dict[str, Any] = {"text": content}
             if reply_to:
                 kwargs["in_reply_to_tweet_id"] = reply_to
+            if media_ids:
+                kwargs["media_ids"] = media_ids
             response = self.client.create_tweet(**kwargs)
             tweet_id = str(response.data["id"])
             logger.info("Tweet posted successfully: %s", tweet_id)

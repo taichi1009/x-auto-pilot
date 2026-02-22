@@ -95,9 +95,9 @@ export function AIGenerateForm({
   const maxChars = getMaxCharsForFormat(postFormat);
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800">
+    <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle className="text-zinc-100 flex items-center gap-2">
+        <CardTitle className="text-foreground flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-purple-400" />
           AI投稿生成
         </CardTitle>
@@ -105,27 +105,27 @@ export function AIGenerateForm({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label className="text-zinc-300">ジャンル</Label>
+            <Label className="text-foreground/80">ジャンル</Label>
             <Input
               placeholder="例: テクノロジー、ビジネス、ライフスタイル"
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 text-zinc-100"
+              className="bg-muted border-border text-foreground"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-zinc-300">スタイル</Label>
+            <Label className="text-foreground/80">スタイル</Label>
             <Select value={style} onValueChange={setStyle}>
-              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100">
+              <SelectTrigger className="bg-muted border-border text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectContent className="bg-muted border-border">
                 {styles.map((s) => (
                   <SelectItem
                     key={s.value}
                     value={s.value}
-                    className="text-zinc-100 focus:bg-zinc-700"
+                    className="text-foreground focus:bg-muted"
                   >
                     {s.label}
                   </SelectItem>
@@ -138,20 +138,20 @@ export function AIGenerateForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {postFormat !== "thread" && (
             <div className="space-y-2">
-              <Label className="text-zinc-300">生成数</Label>
+              <Label className="text-foreground/80">生成数</Label>
               <Select
                 value={String(count)}
                 onValueChange={(v) => setCount(Number(v))}
               >
-                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100">
+                <SelectTrigger className="bg-muted border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700">
+                <SelectContent className="bg-muted border-border">
                   {[1, 2, 3, 5, 10].map((n) => (
                     <SelectItem
                       key={n}
                       value={String(n)}
-                      className="text-zinc-100 focus:bg-zinc-700"
+                      className="text-foreground focus:bg-muted"
                     >
                       {n}件
                     </SelectItem>
@@ -163,7 +163,7 @@ export function AIGenerateForm({
 
           {postFormat === "thread" && (
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 スレッド長さ ({threadLength}ツイート)
               </Label>
               <input
@@ -174,7 +174,7 @@ export function AIGenerateForm({
                 onChange={(e) => setThreadLength(Number(e.target.value))}
                 className="w-full accent-blue-500"
               />
-              <div className="flex justify-between text-xs text-zinc-500">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>2</span>
                 <span>25</span>
               </div>
@@ -182,12 +182,12 @@ export function AIGenerateForm({
           )}
 
           <div className="space-y-2">
-            <Label className="text-zinc-300">カスタムプロンプト (任意)</Label>
+            <Label className="text-foreground/80">カスタムプロンプト (任意)</Label>
             <Input
               placeholder="追加の指示を入力..."
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 text-zinc-100"
+              className="bg-muted border-border text-foreground"
             />
           </div>
         </div>
@@ -198,7 +198,7 @@ export function AIGenerateForm({
             checked={usePersona}
             onCheckedChange={setUsePersona}
           />
-          <Label className="text-zinc-300">ペルソナを使用</Label>
+          <Label className="text-foreground/80">ペルソナを使用</Label>
         </div>
 
         <Button
@@ -223,7 +223,7 @@ export function AIGenerateForm({
         {/* Thread results */}
         {postFormat === "thread" && threadResults.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-zinc-300">
+            <Label className="text-foreground/80">
               生成結果 (クリックして選択)
             </Label>
             <div className="space-y-3">
@@ -233,18 +233,18 @@ export function AIGenerateForm({
                   onClick={() => handleSelect(index)}
                   className={`w-full text-left p-3 rounded-lg border text-sm transition-colors ${
                     selectedIndex === index
-                      ? "bg-blue-500/10 border-blue-500/50 text-zinc-100"
-                      : "bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:border-zinc-600"
+                      ? "bg-blue-500/10 border-blue-500/50 text-foreground"
+                      : "bg-muted/50 border-border text-foreground/80 hover:border-border"
                   }`}
                 >
                   {thread.map((tweet, tIdx) => (
                     <div key={tIdx} className="flex gap-2 mb-2">
-                      <span className="text-xs text-zinc-500 font-mono w-5 shrink-0">
+                      <span className="text-xs text-muted-foreground font-mono w-5 shrink-0">
                         {tIdx + 1}.
                       </span>
                       <div>
                         <p className="whitespace-pre-wrap">{tweet}</p>
-                        <p className="text-xs text-zinc-500 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {tweet.length}/280
                         </p>
                       </div>
@@ -259,7 +259,7 @@ export function AIGenerateForm({
         {/* Regular post results */}
         {postFormat !== "thread" && results.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-zinc-300">
+            <Label className="text-foreground/80">
               生成結果 (クリックして選択)
             </Label>
             <div className="space-y-2">
@@ -269,14 +269,14 @@ export function AIGenerateForm({
                   onClick={() => handleSelect(index)}
                   className={`w-full text-left p-3 rounded-lg border text-sm transition-colors ${
                     selectedIndex === index
-                      ? "bg-blue-500/10 border-blue-500/50 text-zinc-100"
-                      : "bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:border-zinc-600"
+                      ? "bg-blue-500/10 border-blue-500/50 text-foreground"
+                      : "bg-muted/50 border-border text-foreground/80 hover:border-border"
                   }`}
                 >
                   <p className={`whitespace-pre-wrap ${postFormat === "long_form" ? "max-h-40 overflow-y-auto" : ""}`}>
                     {text}
                   </p>
-                  <p className="text-xs text-zinc-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {text.length}/{maxChars.toLocaleString()}文字
                   </p>
                 </button>

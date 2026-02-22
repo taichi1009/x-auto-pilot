@@ -22,6 +22,7 @@ export interface Post {
   posted_at?: string | null;
   retry_count: number;
   predicted_impressions?: number | null;
+  image_url?: string | null;
   persona_id?: number | null;
   schedule_id?: number | null;
   thread_posts: ThreadPost[];
@@ -345,4 +346,43 @@ export interface ApiUsage {
 export interface HealthCheck {
   status: string;
   version?: string;
+}
+
+// Auto-Pilot
+export interface AutoPilotStatus {
+  enabled: boolean;
+  auto_post_enabled: boolean;
+  auto_post_count: number;
+  auto_post_with_image: boolean;
+  auto_follow_enabled: boolean;
+  auto_follow_keywords: string;
+  auto_follow_daily_limit: number;
+}
+
+// Auth
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: "admin" | "user";
+  subscription_tier: "free" | "basic" | "pro" | "enterprise";
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: User;
+}
+
+// Admin
+export interface AdminStats {
+  total_users: number;
+  active_users: number;
+  tier_breakdown: Record<string, number>;
+  total_posts: number;
+  monthly_revenue: number;
 }

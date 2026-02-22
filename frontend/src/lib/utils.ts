@@ -68,6 +68,8 @@ export function getTierLabel(tier: string): string {
       return "Basic";
     case "pro":
       return "Pro";
+    case "enterprise":
+      return "Enterprise";
     default:
       return tier;
   }
@@ -81,6 +83,8 @@ export function getTierColor(tier: string): string {
       return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     case "pro":
       return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+    case "enterprise":
+      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
     default:
       return "bg-zinc-500/20 text-zinc-400 border-zinc-500/30";
   }

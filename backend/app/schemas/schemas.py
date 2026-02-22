@@ -3,6 +3,57 @@ from typing import Optional, List, Any, Dict
 from pydantic import BaseModel, ConfigDict, Field
 
 
+# ---- Auth ----
+
+class UserRegister(BaseModel):
+    email: str
+    password: str = Field(..., min_length=6)
+    name: str
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: "UserResponse"
+
+
+class TokenRefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    name: str
+    role: str
+    subscription_tier: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminUserUpdate(BaseModel):
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    subscription_tier: Optional[str] = None
+
+
+class AdminStats(BaseModel):
+    total_users: int
+    active_users: int
+    tier_breakdown: Dict[str, int]
+    total_posts: int
+    monthly_revenue: float
+
+
 # ---- Post ----
 
 class PostCreate(BaseModel):
@@ -10,6 +61,7 @@ class PostCreate(BaseModel):
     status: str = "draft"
     post_type: str = "original"
     post_format: str = "tweet"
+    image_url: Optional[str] = None
     persona_id: Optional[int] = None
     schedule_id: Optional[int] = None
     thread_contents: Optional[List[str]] = None
@@ -20,6 +72,7 @@ class PostUpdate(BaseModel):
     status: Optional[str] = None
     post_type: Optional[str] = None
     post_format: Optional[str] = None
+    image_url: Optional[str] = None
     persona_id: Optional[int] = None
     schedule_id: Optional[int] = None
     thread_contents: Optional[List[str]] = None
@@ -46,6 +99,7 @@ class PostResponse(BaseModel):
     posted_at: Optional[datetime] = None
     retry_count: int
     predicted_impressions: Optional[int] = None
+    image_url: Optional[str] = None
     persona_id: Optional[int] = None
     schedule_id: Optional[int] = None
     thread_posts: List[ThreadPostResponse] = []
@@ -364,6 +418,16 @@ class ContentStrategyResponse(BaseModel):
 
 
 # ---- ImpressionPrediction ----
+
+class AutoPilotSettings(BaseModel):
+    enabled: bool = False
+    auto_post_enabled: bool = True
+    auto_post_count: int = 3
+    auto_post_with_image: bool = True
+    auto_follow_enabled: bool = False
+    auto_follow_keywords: str = ""
+    auto_follow_daily_limit: int = 10
+
 
 class ImpressionPredictRequest(BaseModel):
     content: str = Field(..., max_length=25000)

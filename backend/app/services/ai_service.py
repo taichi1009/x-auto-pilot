@@ -11,19 +11,61 @@ logger = logging.getLogger(__name__)
 
 
 class AIService:
-    def __init__(self) -> None:
-        self._client: Optional[anthropic.Anthropic] = None
+    def __init__(self, provider: Optional[str] = None) -> None:
+        self.provider = provider or settings.AI_PROVIDER
+        self._claude_client: Optional[anthropic.Anthropic] = None
+        self._openai_client = None
 
     @property
     def client(self) -> anthropic.Anthropic:
-        if self._client is None:
+        """Legacy accessor for Claude client (backward compat)."""
+        if self._claude_client is None:
             if not settings.CLAUDE_API_KEY:
                 raise HTTPException(
                     status_code=500,
                     detail="CLAUDE_API_KEY is not configured.",
                 )
-            self._client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
-        return self._client
+            self._claude_client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
+        return self._claude_client
+
+    @property
+    def openai_client(self):
+        if self._openai_client is None:
+            import openai
+
+            if not settings.OPENAI_API_KEY:
+                raise HTTPException(
+                    status_code=500,
+                    detail="OPENAI_API_KEY is not configured.",
+                )
+            self._openai_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        return self._openai_client
+
+    def call_llm(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 1024,
+    ) -> str:
+        """Call the configured LLM provider and return the text response."""
+        if self.provider == "openai":
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o",
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            return response.choices[0].message.content.strip()
+        else:
+            message = self.client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=max_tokens,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            return message.content[0].text.strip()
 
     def _build_persona_context(self, persona) -> str:
         """Build a system prompt section from a persona object."""
@@ -106,13 +148,7 @@ class AIService:
         )
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=1024,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            response_text = message.content[0].text.strip()
+            response_text = self.call_llm(system_prompt, user_prompt, 1024)
             posts = json.loads(response_text)
             if not isinstance(posts, list):
                 raise ValueError("Response is not a list")
@@ -129,10 +165,10 @@ class AIService:
                 status_code=502,
                 detail="AI returned an invalid response format.",
             )
-        except anthropic.APIError as exc:
-            logger.error("Claude API error: %s", exc)
+        except Exception as exc:
+            logger.error("AI API error: %s", exc)
             raise HTTPException(
-                status_code=502, detail=f"Claude API error: {exc}"
+                status_code=502, detail=f"AI API error: {exc}"
             ) from exc
 
     def generate_long_form(
@@ -169,13 +205,7 @@ class AIService:
         )
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=4096,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            response_text = message.content[0].text.strip()
+            response_text = self.call_llm(system_prompt, user_prompt, 4096)
             posts = json.loads(response_text)
             if not isinstance(posts, list):
                 raise ValueError("Response is not a list")
@@ -184,9 +214,9 @@ class AIService:
         except json.JSONDecodeError:
             logger.error("Failed to parse long-form response")
             raise HTTPException(status_code=502, detail="AI returned invalid format.")
-        except anthropic.APIError as exc:
-            logger.error("Claude API error: %s", exc)
-            raise HTTPException(status_code=502, detail=f"Claude API error: {exc}") from exc
+        except Exception as exc:
+            logger.error("AI API error: %s", exc)
+            raise HTTPException(status_code=502, detail=f"AI API error: {exc}") from exc
 
     def generate_thread(
         self,
@@ -223,16 +253,9 @@ class AIService:
         )
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=4096,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            response_text = message.content[0].text.strip()
+            response_text = self.call_llm(system_prompt, user_prompt, 4096)
             result = json.loads(response_text)
             threads = result.get("threads", [])
-            # Validate each tweet in each thread
             validated_threads = []
             for thread in threads[:count]:
                 validated_thread = []
@@ -243,7 +266,6 @@ class AIService:
                         validated_thread.append(tweet[:277] + "...")
                 if validated_thread:
                     validated_threads.append(validated_thread)
-            # Flatten first thread as posts for backward compatibility
             first_thread_posts = validated_threads[0] if validated_threads else []
             return {
                 "posts": first_thread_posts,
@@ -253,9 +275,9 @@ class AIService:
         except json.JSONDecodeError:
             logger.error("Failed to parse thread response")
             raise HTTPException(status_code=502, detail="AI returned invalid format.")
-        except anthropic.APIError as exc:
-            logger.error("Claude API error: %s", exc)
-            raise HTTPException(status_code=502, detail=f"Claude API error: {exc}") from exc
+        except Exception as exc:
+            logger.error("AI API error: %s", exc)
+            raise HTTPException(status_code=502, detail=f"AI API error: {exc}") from exc
 
     def improve_post(
         self,
@@ -279,13 +301,7 @@ class AIService:
         )
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=512,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            response_text = message.content[0].text.strip()
+            response_text = self.call_llm(system_prompt, user_prompt, 512)
             result = json.loads(response_text)
             improved = result.get("improved", content)
             if len(improved) > 280:
@@ -301,10 +317,10 @@ class AIService:
                 status_code=502,
                 detail="AI returned an invalid response format.",
             )
-        except anthropic.APIError as exc:
-            logger.error("Claude API error: %s", exc)
+        except Exception as exc:
+            logger.error("AI API error: %s", exc)
             raise HTTPException(
-                status_code=502, detail=f"Claude API error: {exc}"
+                status_code=502, detail=f"AI API error: {exc}"
             ) from exc
 
     def analyze_performance(
@@ -331,13 +347,7 @@ class AIService:
         )
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=2048,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            )
-            response_text = message.content[0].text.strip()
+            response_text = self.call_llm(system_prompt, user_prompt, 2048)
             result = json.loads(response_text)
             return result
         except (json.JSONDecodeError, KeyError):
@@ -348,8 +358,8 @@ class AIService:
                 "improvement_areas": [],
                 "recommendations": [],
             }
-        except anthropic.APIError as exc:
-            logger.error("Claude API error during analysis: %s", exc)
+        except Exception as exc:
+            logger.error("AI API error during analysis: %s", exc)
             raise HTTPException(
-                status_code=502, detail=f"Claude API error: {exc}"
+                status_code=502, detail=f"AI API error: {exc}"
             ) from exc

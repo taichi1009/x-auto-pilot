@@ -22,7 +22,7 @@ class PostService:
         self.db = db
         self.x_api = XApiService()
 
-    def create_post(self, data: PostCreate) -> Post:
+    def create_post(self, data: PostCreate, user_id: Optional[int] = None) -> Post:
         post = Post(
             content=data.content,
             status=PostStatus(data.status) if data.status else PostStatus.draft,
@@ -31,6 +31,7 @@ class PostService:
             persona_id=data.persona_id,
             schedule_id=data.schedule_id,
         )
+        post.user_id = user_id
         self.db.add(post)
         self.db.commit()
         self.db.refresh(post)
@@ -56,8 +57,11 @@ class PostService:
         limit: int = 20,
         status: Optional[str] = None,
         post_type: Optional[str] = None,
+        user_id: Optional[int] = None,
     ) -> Tuple[List[Post], int]:
         query = self.db.query(Post)
+        if user_id is not None:
+            query = query.filter(Post.user_id == user_id)
         if status:
             query = query.filter(Post.status == PostStatus(status))
         if post_type:
@@ -66,14 +70,17 @@ class PostService:
         posts = query.order_by(desc(Post.created_at)).offset(skip).limit(limit).all()
         return posts, total
 
-    def get_post(self, post_id: int) -> Post:
-        post = self.db.query(Post).filter(Post.id == post_id).first()
+    def get_post(self, post_id: int, user_id: Optional[int] = None) -> Post:
+        query = self.db.query(Post).filter(Post.id == post_id)
+        if user_id is not None:
+            query = query.filter(Post.user_id == user_id)
+        post = query.first()
         if not post:
             raise HTTPException(status_code=404, detail=f"Post {post_id} not found.")
         return post
 
-    def update_post(self, post_id: int, data: PostUpdate) -> Post:
-        post = self.get_post(post_id)
+    def update_post(self, post_id: int, data: PostUpdate, user_id: Optional[int] = None) -> Post:
+        post = self.get_post(post_id, user_id=user_id)
         update_data = data.model_dump(exclude_unset=True)
         if "status" in update_data and update_data["status"] is not None:
             update_data["status"] = PostStatus(update_data["status"])
@@ -107,8 +114,8 @@ class PostService:
         logger.info("Updated post id=%d", post.id)
         return post
 
-    def delete_post(self, post_id: int) -> bool:
-        post = self.get_post(post_id)
+    def delete_post(self, post_id: int, user_id: Optional[int] = None) -> bool:
+        post = self.get_post(post_id, user_id=user_id)
         if post.status == PostStatus.posted:
             raise HTTPException(
                 status_code=400,
@@ -119,8 +126,8 @@ class PostService:
         logger.info("Deleted post id=%d", post_id)
         return True
 
-    def publish_post(self, post_id: int) -> Post:
-        post = self.get_post(post_id)
+    def publish_post(self, post_id: int, media_ids: Optional[List[str]] = None, user_id: Optional[int] = None) -> Post:
+        post = self.get_post(post_id, user_id=user_id)
         if post.status == PostStatus.posted:
             raise HTTPException(
                 status_code=400, detail="Post has already been published."
@@ -144,9 +151,9 @@ class PostService:
                         status_code=400,
                         detail=f"Thread tweet #{tp.thread_order} exceeds 280 characters.",
                     )
-        return self._attempt_publish(post)
+        return self._attempt_publish(post, media_ids=media_ids)
 
-    def _attempt_publish(self, post: Post) -> Post:
+    def _attempt_publish(self, post: Post, media_ids: Optional[List[str]] = None) -> Post:
         fmt = post.post_format if post.post_format else PostFormat.tweet
         if fmt == PostFormat.thread and post.thread_posts:
             return self._publish_thread(post)
@@ -154,7 +161,7 @@ class PostService:
         last_error = None
         for attempt in range(MAX_RETRIES):
             try:
-                tweet_id = self.x_api.post_tweet(post.content)
+                tweet_id = self.x_api.post_tweet(post.content, media_ids=media_ids)
                 post.x_tweet_id = tweet_id
                 post.status = PostStatus.posted
                 post.posted_at = datetime.utcnow()

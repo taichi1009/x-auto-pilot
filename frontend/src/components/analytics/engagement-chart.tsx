@@ -31,9 +31,9 @@ export function EngagementChart({
   }));
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800">
+    <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle className="text-zinc-100">{title}</CardTitle>
+        <CardTitle className="text-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">

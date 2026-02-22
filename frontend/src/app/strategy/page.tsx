@@ -244,10 +244,10 @@ export default function StrategyPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">
+          <h1 className="text-2xl font-bold text-foreground">
             コンテンツ戦略
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             X運用の戦略を設定し、コンテンツの方向性を管理します
           </p>
         </div>
@@ -265,15 +265,15 @@ export default function StrategyPage() {
 
       {/* ── Strategy Summary Card (top) ── */}
       {loading ? (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border">
           <CardContent className="p-6">
-            <div className="h-24 rounded bg-zinc-800 animate-pulse" />
+            <div className="h-24 rounded bg-muted animate-pulse" />
           </CardContent>
         </Card>
       ) : activeStrategy ? (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-zinc-100 text-lg flex items-center gap-2">
+            <CardTitle className="text-foreground text-lg flex items-center gap-2">
               <Target className="h-5 w-5 text-blue-400" />
               アクティブ戦略: {activeStrategy.name}
               <Badge className="bg-green-500/20 text-green-400 border-green-500/30 ml-2">
@@ -283,43 +283,43 @@ export default function StrategyPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
+              <div className="bg-muted/50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                   <Clock className="h-3.5 w-3.5" />
                   投稿頻度
                 </div>
-                <p className="text-xl font-bold text-zinc-100">
+                <p className="text-xl font-bold text-foreground">
                   {activeStrategy.posting_frequency}
-                  <span className="text-sm font-normal text-zinc-400">
+                  <span className="text-sm font-normal text-muted-foreground">
                     {" "}
                     回/日
                   </span>
                 </p>
               </div>
-              <div className="bg-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
+              <div className="bg-muted/50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                   <Eye className="h-3.5 w-3.5" />
                   インプレッション目標
                 </div>
-                <p className="text-xl font-bold text-zinc-100">
+                <p className="text-xl font-bold text-foreground">
                   {activeStrategy.impression_target.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
+              <div className="bg-muted/50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                   <Users className="h-3.5 w-3.5" />
                   フォロワー増加目標
                 </div>
-                <p className="text-xl font-bold text-zinc-100">
+                <p className="text-xl font-bold text-foreground">
                   +{activeStrategy.follower_growth_target.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
+              <div className="bg-muted/50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
                   <BarChart3 className="h-3.5 w-3.5" />
                   エンゲージメント率目標
                 </div>
-                <p className="text-xl font-bold text-zinc-100">
+                <p className="text-xl font-bold text-foreground">
                   {activeStrategy.engagement_rate_target}%
                 </p>
               </div>
@@ -327,13 +327,13 @@ export default function StrategyPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border">
           <CardContent className="p-8 text-center">
-            <Target className="h-10 w-10 text-zinc-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-zinc-300 mb-2">
+            <Target className="h-10 w-10 text-muted-foreground/60 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground/80 mb-2">
               まだ戦略が作成されていません
             </h3>
-            <p className="text-sm text-zinc-500 mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               最初のコンテンツ戦略を作成して、X運用を最適化しましょう
             </p>
             <Button onClick={openCreateDialog} className="gap-2">
@@ -348,44 +348,44 @@ export default function StrategyPage() {
       {activeStrategy && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Growth Goals Section */}
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-400" />
                 成長目標
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-blue-400" />
-                  <span className="text-sm text-zinc-300">
+                  <span className="text-sm text-foreground/80">
                     フォロワー増加目標
                   </span>
                 </div>
-                <span className="text-lg font-bold text-zinc-100">
+                <span className="text-lg font-bold text-foreground">
                   +{activeStrategy.follower_growth_target.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-purple-400" />
-                  <span className="text-sm text-zinc-300">
+                  <span className="text-sm text-foreground/80">
                     インプレッション目標
                   </span>
                 </div>
-                <span className="text-lg font-bold text-zinc-100">
+                <span className="text-lg font-bold text-foreground">
                   {activeStrategy.impression_target.toLocaleString()}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-amber-400" />
-                  <span className="text-sm text-zinc-300">
+                  <span className="text-sm text-foreground/80">
                     エンゲージメント率目標
                   </span>
                 </div>
-                <span className="text-lg font-bold text-zinc-100">
+                <span className="text-lg font-bold text-foreground">
                   {activeStrategy.engagement_rate_target}%
                 </span>
               </div>
@@ -393,9 +393,9 @@ export default function StrategyPage() {
           </Card>
 
           {/* Content Pillars Section */}
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4 text-purple-400" />
                 コンテンツの柱
               </CardTitle>
@@ -414,7 +414,7 @@ export default function StrategyPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-muted-foreground">
                   コンテンツの柱が設定されていません
                 </p>
               )}
@@ -422,9 +422,9 @@ export default function StrategyPage() {
           </Card>
 
           {/* Content Mix Section */}
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <Zap className="h-4 w-4 text-amber-400" />
                 コンテンツミックス
               </CardTitle>
@@ -445,16 +445,16 @@ export default function StrategyPage() {
                   return (
                     <div key={key} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-300">
+                        <span className="text-foreground/80">
                           {labels[key] ?? key}
                         </span>
-                        <span className="text-zinc-100 font-medium">
+                        <span className="text-foreground font-medium">
                           {value}%
                         </span>
                       </div>
-                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div
-                          className={`h-full ${colors[key] ?? "bg-zinc-500"} rounded-full transition-all`}
+                          className={`h-full ${colors[key] ?? "bg-muted-foreground"} rounded-full transition-all`}
                           style={{ width: `${value}%` }}
                         />
                       </div>
@@ -466,9 +466,9 @@ export default function StrategyPage() {
           </Card>
 
           {/* Optimal Posting Times */}
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <Clock className="h-4 w-4 text-cyan-400" />
                 最適投稿時間
               </CardTitle>
@@ -487,7 +487,7 @@ export default function StrategyPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-muted-foreground">
                   投稿時間が設定されていません
                 </p>
               )}
@@ -495,9 +495,9 @@ export default function StrategyPage() {
           </Card>
 
           {/* Hashtag Groups */}
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <Hash className="h-4 w-4 text-pink-400" />
                 ハッシュタググループ
               </CardTitle>
@@ -508,9 +508,9 @@ export default function StrategyPage() {
                   ([groupName, tags]) => (
                     <div
                       key={groupName}
-                      className="p-3 bg-zinc-800/50 rounded-lg"
+                      className="p-3 bg-muted/50 rounded-lg"
                     >
-                      <h4 className="text-sm font-medium text-zinc-200 mb-2">
+                      <h4 className="text-sm font-medium text-foreground/90 mb-2">
                         {groupName}
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
@@ -528,7 +528,7 @@ export default function StrategyPage() {
                   )
                 )
               ) : (
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-muted-foreground">
                   ハッシュタググループが設定されていません
                 </p>
               )}
@@ -536,9 +536,9 @@ export default function StrategyPage() {
           </Card>
 
           {/* AI Recommendations */}
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-yellow-400" />
                 AIレコメンデーション
               </CardTitle>
@@ -548,7 +548,7 @@ export default function StrategyPage() {
                 variant="outline"
                 onClick={handleFetchRecommendations}
                 disabled={loadingRecs}
-                className="w-full gap-2 border-zinc-700 text-zinc-300 hover:text-zinc-100"
+                className="w-full gap-2 border-border text-foreground/80 hover:text-foreground"
               >
                 {loadingRecs ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -562,7 +562,7 @@ export default function StrategyPage() {
                   {recommendations.map((rec, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 text-sm text-zinc-300"
+                      className="flex items-start gap-2 text-sm text-foreground/80"
                     >
                       <CheckCircle2 className="h-4 w-4 text-green-400 mt-0.5 shrink-0" />
                       <span>{rec}</span>
@@ -577,7 +577,7 @@ export default function StrategyPage() {
 
       {/* ── Strategy List ── */}
       <div>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-4">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
           戦略一覧
         </h2>
         {loading ? (
@@ -585,14 +585,14 @@ export default function StrategyPage() {
             {[...Array(3)].map((_, i) => (
               <div
                 key={i}
-                className="h-48 rounded-lg bg-zinc-800 animate-pulse"
+                className="h-48 rounded-lg bg-muted animate-pulse"
               />
             ))}
           </div>
         ) : (strategies ?? []).length === 0 ? (
           <div className="text-center py-12">
-            <Target className="h-10 w-10 text-zinc-600 mx-auto mb-4" />
-            <p className="text-sm text-zinc-500">
+            <Target className="h-10 w-10 text-muted-foreground/60 mx-auto mb-4" />
+            <p className="text-sm text-muted-foreground">
               まだ戦略がありません。新規戦略を作成してください。
             </p>
           </div>
@@ -601,17 +601,17 @@ export default function StrategyPage() {
             {(strategies ?? []).map((strategy) => (
               <Card
                 key={strategy.id}
-                className={`bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors ${
+                className={`bg-card border-border hover:border-border transition-colors ${
                   strategy.is_active ? "ring-1 ring-green-500/30" : ""
                 }`}
               >
                 <CardContent className="p-5 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-zinc-100 truncate">
+                      <h3 className="font-semibold text-foreground truncate">
                         {strategy.name}
                       </h3>
-                      <p className="text-xs text-zinc-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         作成日:{" "}
                         {new Date(strategy.created_at).toLocaleDateString(
                           "ja-JP"
@@ -626,15 +626,15 @@ export default function StrategyPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-zinc-400">
+                    <div className="text-muted-foreground">
                       投稿頻度:{" "}
-                      <span className="text-zinc-200">
+                      <span className="text-foreground/90">
                         {strategy.posting_frequency}回/日
                       </span>
                     </div>
-                    <div className="text-zinc-400">
+                    <div className="text-muted-foreground">
                       目標IMP:{" "}
-                      <span className="text-zinc-200">
+                      <span className="text-foreground/90">
                         {strategy.impression_target.toLocaleString()}
                       </span>
                     </div>
@@ -646,7 +646,7 @@ export default function StrategyPage() {
                         <Badge
                           key={pillar}
                           variant="outline"
-                          className="border-zinc-700 text-zinc-400 text-[10px]"
+                          className="border-border text-muted-foreground text-[10px]"
                         >
                           {pillar}
                         </Badge>
@@ -654,7 +654,7 @@ export default function StrategyPage() {
                       {strategy.content_pillars.length > 3 && (
                         <Badge
                           variant="outline"
-                          className="border-zinc-700 text-zinc-500 text-[10px]"
+                          className="border-border text-muted-foreground text-[10px]"
                         >
                           +{strategy.content_pillars.length - 3}
                         </Badge>
@@ -662,7 +662,7 @@ export default function StrategyPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+                  <div className="flex items-center gap-2 pt-2 border-t border-border">
                     {!strategy.is_active && (
                       <Button
                         variant="ghost"
@@ -683,7 +683,7 @@ export default function StrategyPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => openEditDialog(strategy)}
-                      className="text-zinc-400 hover:text-zinc-100 gap-1.5"
+                      className="text-muted-foreground hover:text-foreground gap-1.5"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                       編集
@@ -712,9 +712,9 @@ export default function StrategyPage() {
 
       {/* ── Create / Edit Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-zinc-100">
+            <DialogTitle className="text-foreground">
               {editingStrategy ? "戦略を編集" : "新規戦略を作成"}
             </DialogTitle>
           </DialogHeader>
@@ -722,21 +722,21 @@ export default function StrategyPage() {
           <div className="space-y-5">
             {/* Strategy name */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">戦略名</Label>
+              <Label className="text-foreground/80">戦略名</Label>
               <Input
                 placeholder="例: メイン成長戦略"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {/* Growth targets */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label className="text-zinc-300">投稿頻度 (回/日)</Label>
+                <Label className="text-foreground/80">投稿頻度 (回/日)</Label>
                 <Input
                   type="number"
                   min={1}
@@ -747,11 +747,11 @@ export default function StrategyPage() {
                       posting_frequency: Number(e.target.value),
                     })
                   }
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-300">
+                <Label className="text-foreground/80">
                   インプレッション目標
                 </Label>
                 <Input
@@ -764,11 +764,11 @@ export default function StrategyPage() {
                       impression_target: Number(e.target.value),
                     })
                   }
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-300">
+                <Label className="text-foreground/80">
                   フォロワー増加目標
                 </Label>
                 <Input
@@ -781,14 +781,14 @@ export default function StrategyPage() {
                       follower_growth_target: Number(e.target.value),
                     })
                   }
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             </div>
 
             {/* Engagement rate target */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 エンゲージメント率目標 (%)
               </Label>
               <Input
@@ -802,34 +802,34 @@ export default function StrategyPage() {
                     engagement_rate_target: Number(e.target.value),
                   })
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {/* Content pillars */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 コンテンツの柱 (カンマ区切り)
               </Label>
               <Input
                 placeholder="例: テック, ライフハック, キャリア"
                 value={pillarsInput}
                 onChange={(e) => setPillarsInput(e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 カンマで区切って複数の柱を入力してください
               </p>
             </div>
 
             {/* Content mix */}
             <div className="space-y-3">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 コンテンツミックス (合計100%)
               </Label>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-zinc-400 text-xs">
+                  <Label className="text-muted-foreground text-xs">
                     ツイート (%)
                   </Label>
                   <Input
@@ -840,11 +840,11 @@ export default function StrategyPage() {
                     onChange={(e) =>
                       updateContentMix("tweet", Number(e.target.value))
                     }
-                    className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-zinc-400 text-xs">
+                  <Label className="text-muted-foreground text-xs">
                     スレッド (%)
                   </Label>
                   <Input
@@ -855,11 +855,11 @@ export default function StrategyPage() {
                     onChange={(e) =>
                       updateContentMix("thread", Number(e.target.value))
                     }
-                    className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-zinc-400 text-xs">
+                  <Label className="text-muted-foreground text-xs">
                     長文 (%)
                   </Label>
                   <Input
@@ -870,7 +870,7 @@ export default function StrategyPage() {
                     onChange={(e) =>
                       updateContentMix("long_form", Number(e.target.value))
                     }
-                    className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
@@ -888,20 +888,20 @@ export default function StrategyPage() {
 
             {/* Optimal posting times */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 最適投稿時間 (カンマ区切り)
               </Label>
               <Input
                 placeholder='例: 09:00, 12:00, 18:00'
                 value={timesInput}
                 onChange={(e) => setTimesInput(e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {/* Hashtag groups */}
             <div className="space-y-3">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 ハッシュタググループ
               </Label>
               {/* Existing groups */}
@@ -909,13 +909,13 @@ export default function StrategyPage() {
                 ([groupName, tags]) => (
                   <div
                     key={groupName}
-                    className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded-lg"
+                    className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
                   >
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-zinc-200">
+                      <span className="text-sm font-medium text-foreground/90">
                         {groupName}:
                       </span>{" "}
-                      <span className="text-sm text-zinc-400">
+                      <span className="text-sm text-muted-foreground">
                         {tags.join(", ")}
                       </span>
                     </div>
@@ -936,18 +936,18 @@ export default function StrategyPage() {
                   placeholder="グループ名"
                   value={hashtagGroupName}
                   onChange={(e) => setHashtagGroupName(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                  className="bg-muted border-border text-foreground"
                 />
                 <Input
                   placeholder="タグ (カンマ区切り)"
                   value={hashtagGroupTags}
                   onChange={(e) => setHashtagGroupTags(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                  className="bg-muted border-border text-foreground"
                 />
                 <Button
                   variant="outline"
                   onClick={handleAddHashtagGroup}
-                  className="border-zinc-700 text-zinc-300 shrink-0"
+                  className="border-border text-foreground/80 shrink-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -956,27 +956,27 @@ export default function StrategyPage() {
 
             {/* Avoid topics */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 避けるトピック (カンマ区切り)
               </Label>
               <Input
                 placeholder="例: 政治, 宗教"
                 value={avoidInput}
                 onChange={(e) => setAvoidInput(e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {/* Competitor accounts */}
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 競合アカウント (カンマ区切り)
               </Label>
               <Input
                 placeholder="例: @account1, @account2"
                 value={competitorInput}
                 onChange={(e) => setCompetitorInput(e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
           </div>
@@ -985,7 +985,7 @@ export default function StrategyPage() {
             <Button
               variant="ghost"
               onClick={() => setDialogOpen(false)}
-              className="text-zinc-400"
+              className="text-muted-foreground"
             >
               キャンセル
             </Button>

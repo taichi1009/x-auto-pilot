@@ -16,7 +16,7 @@ class TemplateService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def create_template(self, data: TemplateCreate) -> Template:
+    def create_template(self, data: TemplateCreate, user_id: Optional[int] = None) -> Template:
         template = Template(
             name=data.name,
             content_pattern=data.content_pattern,
@@ -24,6 +24,7 @@ class TemplateService:
             category=data.category,
             is_active=data.is_active,
         )
+        template.user_id = user_id
         self.db.add(template)
         self.db.commit()
         self.db.refresh(template)
@@ -36,8 +37,11 @@ class TemplateService:
         limit: int = 20,
         category: Optional[str] = None,
         is_active: Optional[bool] = None,
+        user_id: Optional[int] = None,
     ) -> Tuple[List[Template], int]:
         query = self.db.query(Template)
+        if user_id is not None:
+            query = query.filter(Template.user_id == user_id)
         if category:
             query = query.filter(Template.category == category)
         if is_active is not None:
@@ -48,16 +52,19 @@ class TemplateService:
         )
         return templates, total
 
-    def get_template(self, template_id: int) -> Template:
-        template = self.db.query(Template).filter(Template.id == template_id).first()
+    def get_template(self, template_id: int, user_id: Optional[int] = None) -> Template:
+        query = self.db.query(Template).filter(Template.id == template_id)
+        if user_id is not None:
+            query = query.filter(Template.user_id == user_id)
+        template = query.first()
         if not template:
             raise HTTPException(
                 status_code=404, detail=f"Template {template_id} not found."
             )
         return template
 
-    def update_template(self, template_id: int, data: TemplateUpdate) -> Template:
-        template = self.get_template(template_id)
+    def update_template(self, template_id: int, data: TemplateUpdate, user_id: Optional[int] = None) -> Template:
+        template = self.get_template(template_id, user_id=user_id)
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(template, field, value)
@@ -66,8 +73,8 @@ class TemplateService:
         logger.info("Updated template id=%d", template.id)
         return template
 
-    def delete_template(self, template_id: int) -> bool:
-        template = self.get_template(template_id)
+    def delete_template(self, template_id: int, user_id: Optional[int] = None) -> bool:
+        template = self.get_template(template_id, user_id=user_id)
         self.db.delete(template)
         self.db.commit()
         logger.info("Deleted template id=%d", template_id)

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.models import User
 from app.schemas.schemas import (
     AIGenerateRequest,
     AIGenerateResponse,
@@ -14,12 +15,17 @@ from app.services.ai_service import AIService
 from app.services.persona_service import PersonaService
 from app.services.strategy_service import StrategyService
 from app.services.prediction_service import PredictionService
+from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
 
 @router.post("/generate", response_model=AIGenerateResponse)
-def generate_posts(data: AIGenerateRequest, db: Session = Depends(get_db)):
+def generate_posts(
+    data: AIGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     service = AIService()
 
     # Get persona and strategy if requested
@@ -27,9 +33,9 @@ def generate_posts(data: AIGenerateRequest, db: Session = Depends(get_db)):
     strategy = None
     if data.use_persona:
         persona_service = PersonaService(db)
-        persona = persona_service.get_active_persona()
+        persona = persona_service.get_active_persona(user_id=current_user.id)
     strategy_service = StrategyService(db)
-    strategy = strategy_service.get_active_strategy()
+    strategy = strategy_service.get_active_strategy(user_id=current_user.id)
 
     result = service.generate_posts(
         genre=data.genre,
@@ -51,7 +57,11 @@ def generate_posts(data: AIGenerateRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/improve", response_model=AIImproveResponse)
-def improve_post(data: AIImproveRequest, db: Session = Depends(get_db)):
+def improve_post(
+    data: AIImproveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     service = AIService()
     result = service.improve_post(
         content=data.content,
@@ -62,7 +72,9 @@ def improve_post(data: AIImproveRequest, db: Session = Depends(get_db)):
 
 @router.post("/predict", response_model=ImpressionPredictResponse)
 def predict_impressions(
-    data: ImpressionPredictRequest, db: Session = Depends(get_db)
+    data: ImpressionPredictRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     service = PredictionService(db)
     result = service.predict_impressions(

@@ -41,8 +41,8 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    access_token = create_access_token({"sub": user.id})
-    refresh_token = create_refresh_token({"sub": user.id})
+    access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
 
     return TokenResponse(
         access_token=access_token,
@@ -65,8 +65,8 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
             detail="Account is disabled",
         )
 
-    access_token = create_access_token({"sub": user.id})
-    refresh_token = create_refresh_token({"sub": user.id})
+    access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
 
     return TokenResponse(
         access_token=access_token,
@@ -96,15 +96,15 @@ def refresh_token(data: TokenRefreshRequest, db: Session = Depends(get_db)):
             detail="Invalid refresh token",
         )
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == int(user_id)).first()
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive",
         )
 
-    new_access_token = create_access_token({"sub": user.id})
-    new_refresh_token = create_refresh_token({"sub": user.id})
+    new_access_token = create_access_token({"sub": str(user.id)})
+    new_refresh_token = create_refresh_token({"sub": str(user.id)})
 
     return TokenResponse(
         access_token=new_access_token,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   UserPlus,
   Search,
@@ -18,7 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { StatsCard } from "@/components/analytics/stats-card";
 import { TierGate } from "@/components/common/tier-gate";
 import { useApi } from "@/hooks/use-api";
-import { followsApi, settingsApi } from "@/lib/api-client";
+import { useAuth } from "@/contexts/auth-context";
+import { followsApi } from "@/lib/api-client";
 import {
   formatDate,
   getStatusColor,
@@ -27,17 +28,11 @@ import {
 import type { FollowTarget, FollowStats } from "@/types";
 
 export default function FollowingPage() {
-  const [tier, setTier] = useState("free");
+  const { user } = useAuth();
+  const tier = user?.subscription_tier || "free";
   const [keyword, setKeyword] = useState("");
   const [discovering, setDiscovering] = useState(false);
   const [executing, setExecuting] = useState<number | null>(null);
-
-  useEffect(() => {
-    settingsApi
-      .apiUsage()
-      .then((data) => setTier(data.tier))
-      .catch(() => setTier("free"));
-  }, []);
 
   const {
     data: targets,

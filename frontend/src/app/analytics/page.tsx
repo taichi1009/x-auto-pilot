@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   Eye,
   Heart,
@@ -33,21 +33,16 @@ import { StatsCard } from "@/components/analytics/stats-card";
 import { EngagementChart } from "@/components/analytics/engagement-chart";
 import { TierGate } from "@/components/common/tier-gate";
 import { useApi } from "@/hooks/use-api";
-import { analyticsApi, pdcaApi, settingsApi } from "@/lib/api-client";
+import { useAuth } from "@/contexts/auth-context";
+import { analyticsApi, pdcaApi } from "@/lib/api-client";
 import { truncateText } from "@/lib/utils";
 import type { AnalyticsOverview, AnalyticsTrend, PdcaLog } from "@/types";
 
 export default function AnalyticsPage() {
-  const [tier, setTier] = useState("free");
+  const { user } = useAuth();
+  const tier = user?.subscription_tier || "free";
   const [days, setDays] = useState(30);
   const [collecting, setCollecting] = useState(false);
-
-  useEffect(() => {
-    settingsApi
-      .apiUsage()
-      .then((data) => setTier(data.tier))
-      .catch(() => setTier("free"));
-  }, []);
 
   const {
     data: overview,

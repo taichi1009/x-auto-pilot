@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.models import User, UserRole
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -53,9 +56,9 @@ def get_current_user(
         payload = jwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
-        user_id: int = payload.get("sub")
+        user_id_str = payload.get("sub")
         token_type: str = payload.get("type", "access")
-        if user_id is None or token_type != "access":
+        if user_id_str is None or token_type != "access":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",
@@ -68,6 +71,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    user_id = int(user_id_str)
     user = db.query(User).filter(User.id == user_id).first()
     if user is None or not user.is_active:
         raise HTTPException(

@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
         if not admin:
             admin = User(
                 email="admin@example.com",
-                hashed_password=hash_password("admin123"),
+                hashed_password=hash_password("Admin@2026!"),
                 name="Admin",
                 role=UserRole.admin,
                 subscription_tier=SubscriptionTier.enterprise,
@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
             )
             db.add(admin)
             db.commit()
-            logger.info("Default admin user created (admin@example.com / admin123)")
+            logger.info("Default admin user created (admin@example.com / Admin@2026!)")
     finally:
         db.close()
 

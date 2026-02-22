@@ -52,7 +52,7 @@ export default function LoginPage() {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
                 {error}
@@ -67,6 +67,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-muted border-border text-foreground"
+                autoComplete="off"
                 required
               />
             </div>
@@ -79,6 +80,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-muted border-border text-foreground"
+                autoComplete="new-password"
                 required
               />
             </div>

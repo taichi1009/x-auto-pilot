@@ -24,8 +24,11 @@ class FollowService:
         limit: int = 20,
         status: Optional[str] = None,
         action: Optional[str] = None,
+        user_id: Optional[int] = None,
     ) -> Tuple[List[FollowTarget], int]:
         query = self.db.query(FollowTarget)
+        if user_id is not None:
+            query = query.filter(FollowTarget.user_id == user_id)
         if status:
             query = query.filter(FollowTarget.status == FollowStatus(status))
         if action:
@@ -39,7 +42,7 @@ class FollowService:
         )
         return targets, total
 
-    def create_follow_target(self, data: FollowTargetCreate) -> FollowTarget:
+    def create_follow_target(self, data: FollowTargetCreate, user_id: Optional[int] = None) -> FollowTarget:
         existing = (
             self.db.query(FollowTarget)
             .filter(FollowTarget.x_user_id == data.x_user_id)
@@ -57,6 +60,7 @@ class FollowService:
             action=FollowAction(data.action) if data.action else FollowAction.follow,
             status=FollowStatus.pending,
         )
+        target.user_id = user_id
         self.db.add(target)
         self.db.commit()
         self.db.refresh(target)
@@ -69,10 +73,11 @@ class FollowService:
         users = self.x_api.search_users(query)
         return users
 
-    def execute_follow(self, target_id: int) -> FollowTarget:
-        target = (
-            self.db.query(FollowTarget).filter(FollowTarget.id == target_id).first()
-        )
+    def execute_follow(self, target_id: int, user_id: Optional[int] = None) -> FollowTarget:
+        query = self.db.query(FollowTarget).filter(FollowTarget.id == target_id)
+        if user_id is not None:
+            query = query.filter(FollowTarget.user_id == user_id)
+        target = query.first()
         if not target:
             raise HTTPException(
                 status_code=404, detail=f"Follow target {target_id} not found."
@@ -106,26 +111,25 @@ class FollowService:
             self.db.refresh(target)
             raise
 
-    def get_follow_stats(self) -> Dict[str, int]:
-        total = self.db.query(FollowTarget).count()
+    def get_follow_stats(self, user_id: Optional[int] = None) -> Dict[str, int]:
+        base_query = self.db.query(FollowTarget)
+        if user_id is not None:
+            base_query = base_query.filter(FollowTarget.user_id == user_id)
+        total = base_query.count()
         pending = (
-            self.db.query(FollowTarget)
-            .filter(FollowTarget.status == FollowStatus.pending)
+            base_query.filter(FollowTarget.status == FollowStatus.pending)
             .count()
         )
         completed = (
-            self.db.query(FollowTarget)
-            .filter(FollowTarget.status == FollowStatus.completed)
+            base_query.filter(FollowTarget.status == FollowStatus.completed)
             .count()
         )
         failed = (
-            self.db.query(FollowTarget)
-            .filter(FollowTarget.status == FollowStatus.failed)
+            base_query.filter(FollowTarget.status == FollowStatus.failed)
             .count()
         )
         follow_backs = (
-            self.db.query(FollowTarget)
-            .filter(FollowTarget.follow_back == True)
+            base_query.filter(FollowTarget.follow_back == True)
             .count()
         )
         return {

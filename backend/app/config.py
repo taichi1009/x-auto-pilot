@@ -16,6 +16,28 @@ class Settings(BaseSettings):
     # Claude API key
     CLAUDE_API_KEY: str = ""
 
+    # OpenAI API key
+    OPENAI_API_KEY: str = ""
+
+    # AI provider: "claude" or "openai"
+    AI_PROVIDER: str = "claude"
+
+    # Gemini API key (for image generation)
+    GEMINI_API_KEY: str = ""
+
+    # JWT Authentication
+    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Stripe
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_BASIC_PRICE_ID: str = ""
+    STRIPE_PRO_PRICE_ID: str = ""
+    STRIPE_ENTERPRISE_PRICE_ID: str = ""
+
     # Database
     DATABASE_URL: str = "sqlite:///./x_auto_pilot.db"
 

@@ -14,15 +14,20 @@ import {
   Menu,
   X,
   Zap,
+  User,
+  Target,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/auth-context";
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
+  adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -30,26 +35,34 @@ const navItems: NavItem[] = [
   { label: "投稿", href: "/posts", icon: MessageSquare },
   { label: "テンプレート", href: "/templates", icon: FileText },
   { label: "スケジュール", href: "/schedule", icon: Calendar },
+  { label: "ペルソナ", href: "/persona", icon: User },
+  { label: "戦略", href: "/strategy", icon: Target },
   { label: "フォロー管理", href: "/following", icon: UserPlus, badge: "Basic+" },
   { label: "分析", href: "/analytics", icon: BarChart3, badge: "Basic+" },
   { label: "設定", href: "/settings", icon: Settings },
+  { label: "管理パネル", href: "/admin", icon: Shield, adminOnly: true },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
+  const filteredItems = navItems.filter(
+    (item) => !item.adminOnly || user?.role === "admin"
+  );
+
   return (
     <>
       {/* Mobile menu button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-zinc-800 text-zinc-100 lg:hidden"
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-muted text-foreground lg:hidden"
         aria-label="Toggle menu"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -66,21 +79,21 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-full w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-transform duration-200 lg:translate-x-0",
+          "fixed left-0 top-0 z-40 h-full w-64 bg-card border-r border-border flex flex-col transition-transform duration-200 lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-zinc-800">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600">
             <Zap className="h-4 w-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-zinc-100">X Auto-Pilot</span>
+          <span className="text-lg font-bold text-foreground">X Auto-Pilot</span>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {filteredItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
 
@@ -92,8 +105,8 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   active
-                    ? "bg-zinc-800 text-zinc-100"
-                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 <Icon className="h-5 w-5 shrink-0" />
@@ -112,8 +125,14 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-zinc-800">
-          <p className="text-xs text-zinc-500">X Auto-Pilot v1.0</p>
+        <div className="px-6 py-4 border-t border-border">
+          {user && (
+            <div className="mb-2">
+              <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">X Auto-Pilot v1.0</p>
         </div>
       </aside>
     </>

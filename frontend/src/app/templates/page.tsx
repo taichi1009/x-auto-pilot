@@ -120,7 +120,7 @@ export default function TemplatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             投稿テンプレートを管理して、効率的にコンテンツを作成しましょう
           </p>
         </div>
@@ -142,17 +142,17 @@ export default function TemplatesPage() {
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="h-48 rounded-lg bg-zinc-800 animate-pulse"
+              className="h-48 rounded-lg bg-muted animate-pulse"
             />
           ))}
         </div>
       ) : (templates ?? []).length === 0 ? (
         <div className="text-center py-16">
-          <FileText className="h-10 w-10 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-zinc-300 mb-2">
+          <FileText className="h-10 w-10 text-muted-foreground/60 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground/80 mb-2">
             テンプレートがありません
           </h3>
-          <p className="text-sm text-zinc-500 mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             テンプレートを作成して投稿作成を効率化しましょう
           </p>
           <Button onClick={openCreateDialog} className="gap-2">
@@ -165,18 +165,18 @@ export default function TemplatesPage() {
           {(templates ?? []).map((template) => (
             <Card
               key={template.id}
-              className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors"
+              className="bg-card border-border hover:border-border transition-colors"
             >
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-zinc-100 truncate">
+                    <h3 className="font-semibold text-foreground truncate">
                       {template.name}
                     </h3>
                     {template.category && (
                       <Badge
                         variant="outline"
-                        className="mt-1 border-zinc-700 text-zinc-400 text-[10px]"
+                        className="mt-1 border-border text-muted-foreground text-[10px]"
                       >
                         {template.category}
                       </Badge>
@@ -188,7 +188,7 @@ export default function TemplatesPage() {
                   />
                 </div>
 
-                <p className="text-sm text-zinc-400 whitespace-pre-wrap">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {truncateText(template.content_pattern, 120)}
                 </p>
 
@@ -211,7 +211,7 @@ export default function TemplatesPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => openEditDialog(template)}
-                    className="text-zinc-400 hover:text-zinc-100 gap-1.5"
+                    className="text-muted-foreground hover:text-foreground gap-1.5"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                     編集
@@ -239,28 +239,28 @@ export default function TemplatesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
+        <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-zinc-100">
+            <DialogTitle className="text-foreground">
               {editingTemplate ? "テンプレートを編集" : "新規テンプレート"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-300">テンプレート名</Label>
+              <Label className="text-foreground/80">テンプレート名</Label>
               <Input
                 placeholder="例: 朝の挨拶"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">コンテンツパターン</Label>
+              <Label className="text-foreground/80">コンテンツパターン</Label>
               <Textarea
                 placeholder="おはようございます！今日の{topic}について..."
                 value={formData.content_pattern}
@@ -268,25 +268,25 @@ export default function TemplatesPage() {
                   setFormData({ ...formData, content_pattern: e.target.value })
                 }
                 rows={4}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100 resize-none"
+                className="bg-muted border-border text-foreground resize-none"
               />
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 変数は {`{変数名}`} の形式で記述してください
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">変数 (カンマ区切り)</Label>
+              <Label className="text-foreground/80">変数 (カンマ区切り)</Label>
               <Input
                 placeholder="例: topic, mood, greeting"
                 value={variablesInput}
                 onChange={(e) => setVariablesInput(e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">カテゴリ</Label>
+              <Label className="text-foreground/80">カテゴリ</Label>
               <Input
                 placeholder="例: 挨拶、お知らせ、コラム"
                 value={formData.category ?? ""}
@@ -296,7 +296,7 @@ export default function TemplatesPage() {
                     category: e.target.value || null,
                   })
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
@@ -307,7 +307,7 @@ export default function TemplatesPage() {
                   setFormData({ ...formData, is_active: checked })
                 }
               />
-              <Label className="text-zinc-300">有効</Label>
+              <Label className="text-foreground/80">有効</Label>
             </div>
           </div>
 
@@ -315,7 +315,7 @@ export default function TemplatesPage() {
             <Button
               variant="ghost"
               onClick={() => setDialogOpen(false)}
-              className="text-zinc-400"
+              className="text-muted-foreground"
             >
               キャンセル
             </Button>

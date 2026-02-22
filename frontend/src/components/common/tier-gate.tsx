@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface TierGateProps {
-  requiredTier: "basic" | "pro";
+  requiredTier: "basic" | "pro" | "enterprise";
   currentTier: string;
   children: React.ReactNode;
 }
@@ -14,11 +14,13 @@ const tierLevel: Record<string, number> = {
   free: 0,
   basic: 1,
   pro: 2,
+  enterprise: 3,
 };
 
 const tierNames: Record<string, string> = {
   basic: "Basic",
   pro: "Pro",
+  enterprise: "Enterprise",
 };
 
 export function TierGate({ requiredTier, currentTier, children }: TierGateProps) {
@@ -35,21 +37,21 @@ export function TierGate({ requiredTier, currentTier, children }: TierGateProps)
         {children}
       </div>
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="bg-zinc-900/95 border border-zinc-700 rounded-xl p-8 text-center max-w-md mx-4 shadow-2xl">
+        <div className="bg-card/95 border border-border rounded-xl p-8 text-center max-w-md mx-4 shadow-2xl">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center">
-              <Lock className="h-8 w-8 text-zinc-400" />
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+              <Lock className="h-8 w-8 text-muted-foreground" />
             </div>
           </div>
-          <h3 className="text-lg font-bold text-zinc-100 mb-2">
+          <h3 className="text-lg font-bold text-foreground mb-2">
             {tierNames[requiredTier]}プラン以上が必要です
           </h3>
-          <p className="text-sm text-zinc-400 mb-6">
-            この機能を利用するには、APIティアを{tierNames[requiredTier]}以上にアップグレードしてください。
+          <p className="text-sm text-muted-foreground mb-6">
+            この機能を利用するには、{tierNames[requiredTier]}以上にアップグレードしてください。
           </p>
           <Link href="/settings">
             <Button variant="default" className="gap-2">
-              設定でティアを変更
+              設定でプランを変更
             </Button>
           </Link>
         </div>

@@ -133,7 +133,7 @@ export default function SchedulePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           投稿スケジュールを管理して、自動投稿を設定しましょう
         </p>
         <Button onClick={openCreateDialog} className="gap-2">
@@ -154,17 +154,17 @@ export default function SchedulePage() {
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-24 rounded-lg bg-zinc-800 animate-pulse"
+              className="h-24 rounded-lg bg-muted animate-pulse"
             />
           ))}
         </div>
       ) : (schedules ?? []).length === 0 ? (
         <div className="text-center py-16">
-          <Calendar className="h-10 w-10 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-zinc-300 mb-2">
+          <Calendar className="h-10 w-10 text-muted-foreground/60 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground/80 mb-2">
             スケジュールがありません
           </h3>
-          <p className="text-sm text-zinc-500 mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             自動投稿スケジュールを作成しましょう
           </p>
           <Button onClick={openCreateDialog} className="gap-2">
@@ -177,13 +177,13 @@ export default function SchedulePage() {
           {(schedules ?? []).map((schedule) => (
             <Card
               key={schedule.id}
-              className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors"
+              className="bg-card border-border hover:border-border transition-colors"
             >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-center gap-3">
-                      <h3 className="font-semibold text-zinc-100">
+                      <h3 className="font-semibold text-foreground">
                         {schedule.name}
                       </h3>
                       <Badge
@@ -198,7 +198,7 @@ export default function SchedulePage() {
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="border-zinc-700 text-zinc-400"
+                        className="border-border text-muted-foreground"
                       >
                         {schedule.schedule_type === "once" ? (
                           <span className="flex items-center gap-1">
@@ -214,7 +214,7 @@ export default function SchedulePage() {
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs text-zinc-500">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       {schedule.scheduled_at && (
                         <span>
                           予定: {formatDate(schedule.scheduled_at)}
@@ -227,7 +227,7 @@ export default function SchedulePage() {
                     </div>
 
                     {schedule.ai_prompt && (
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-sm text-muted-foreground">
                         プロンプト: {schedule.ai_prompt}
                       </p>
                     )}
@@ -238,7 +238,7 @@ export default function SchedulePage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleToggle(schedule.id)}
-                      className="text-zinc-400 hover:text-zinc-100 h-8 w-8"
+                      className="text-muted-foreground hover:text-foreground h-8 w-8"
                       title={schedule.is_active ? "無効化" : "有効化"}
                     >
                       {schedule.is_active ? (
@@ -251,7 +251,7 @@ export default function SchedulePage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => openEditDialog(schedule)}
-                      className="text-zinc-400 hover:text-zinc-100 h-8 w-8"
+                      className="text-muted-foreground hover:text-foreground h-8 w-8"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -279,9 +279,9 @@ export default function SchedulePage() {
       {/* Upcoming timeline */}
       {(schedules ?? []).filter((s) => s.is_active && s.scheduled_at).length >
         0 && (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-zinc-100 text-base">
+            <CardTitle className="text-foreground text-base">
               今後の予定
             </CardTitle>
           </CardHeader>
@@ -300,10 +300,10 @@ export default function SchedulePage() {
                     className="flex items-center gap-4 pl-4 border-l-2 border-blue-500/50"
                   >
                     <div>
-                      <p className="text-sm font-medium text-zinc-100">
+                      <p className="text-sm font-medium text-foreground">
                         {schedule.name}
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         {formatDate(schedule.scheduled_at!)}
                       </p>
                     </div>
@@ -316,47 +316,47 @@ export default function SchedulePage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
+        <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-zinc-100">
+            <DialogTitle className="text-foreground">
               {editingSchedule ? "スケジュールを編集" : "新規スケジュール"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-300">スケジュール名</Label>
+              <Label className="text-foreground/80">スケジュール名</Label>
               <Input
                 placeholder="例: 朝の自動投稿"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">スケジュールタイプ</Label>
+              <Label className="text-foreground/80">スケジュールタイプ</Label>
               <Select
                 value={formData.schedule_type}
                 onValueChange={(v) =>
                   setFormData({ ...formData, schedule_type: v })
                 }
               >
-                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100">
+                <SelectTrigger className="bg-muted border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700">
+                <SelectContent className="bg-muted border-border">
                   <SelectItem
                     value="once"
-                    className="text-zinc-100 focus:bg-zinc-700"
+                    className="text-foreground focus:bg-muted"
                   >
                     一回のみ
                   </SelectItem>
                   <SelectItem
                     value="recurring"
-                    className="text-zinc-100 focus:bg-zinc-700"
+                    className="text-foreground focus:bg-muted"
                   >
                     繰り返し
                   </SelectItem>
@@ -366,7 +366,7 @@ export default function SchedulePage() {
 
             {formData.schedule_type === "once" ? (
               <div className="space-y-2">
-                <Label className="text-zinc-300">予定日時</Label>
+                <Label className="text-foreground/80">予定日時</Label>
                 <Input
                   type="datetime-local"
                   value={
@@ -384,12 +384,12 @@ export default function SchedulePage() {
                         : null,
                     })
                   }
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             ) : (
               <div className="space-y-2">
-                <Label className="text-zinc-300">Cron式</Label>
+                <Label className="text-foreground/80">Cron式</Label>
                 <Input
                   placeholder="例: 0 9 * * * (毎日9:00)"
                   value={formData.cron_expression ?? ""}
@@ -399,41 +399,41 @@ export default function SchedulePage() {
                       cron_expression: e.target.value || null,
                     })
                   }
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                  className="bg-muted border-border text-foreground"
                 />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-muted-foreground">
                   分 時 日 月 曜日 の形式で入力
                 </p>
               </div>
             )}
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">投稿タイプ</Label>
+              <Label className="text-foreground/80">投稿タイプ</Label>
               <Select
                 value={formData.post_type}
                 onValueChange={(v) =>
                   setFormData({ ...formData, post_type: v })
                 }
               >
-                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100">
+                <SelectTrigger className="bg-muted border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700">
+                <SelectContent className="bg-muted border-border">
                   <SelectItem
                     value="original"
-                    className="text-zinc-100 focus:bg-zinc-700"
+                    className="text-foreground focus:bg-muted"
                   >
                     オリジナル
                   </SelectItem>
                   <SelectItem
                     value="ai_generated"
-                    className="text-zinc-100 focus:bg-zinc-700"
+                    className="text-foreground focus:bg-muted"
                   >
                     AI生成
                   </SelectItem>
                   <SelectItem
                     value="template"
-                    className="text-zinc-100 focus:bg-zinc-700"
+                    className="text-foreground focus:bg-muted"
                   >
                     テンプレート
                   </SelectItem>
@@ -443,7 +443,7 @@ export default function SchedulePage() {
 
             {formData.post_type === "ai_generated" && (
               <div className="space-y-2">
-                <Label className="text-zinc-300">AIプロンプト</Label>
+                <Label className="text-foreground/80">AIプロンプト</Label>
                 <Textarea
                   placeholder="AIに生成させたい投稿の指示を入力..."
                   value={formData.ai_prompt ?? ""}
@@ -454,7 +454,7 @@ export default function SchedulePage() {
                     })
                   }
                   rows={3}
-                  className="bg-zinc-800 border-zinc-700 text-zinc-100 resize-none"
+                  className="bg-muted border-border text-foreground resize-none"
                 />
               </div>
             )}
@@ -466,7 +466,7 @@ export default function SchedulePage() {
                   setFormData({ ...formData, is_active: checked })
                 }
               />
-              <Label className="text-zinc-300">有効</Label>
+              <Label className="text-foreground/80">有効</Label>
             </div>
           </div>
 
@@ -474,7 +474,7 @@ export default function SchedulePage() {
             <Button
               variant="ghost"
               onClick={() => setDialogOpen(false)}
-              className="text-zinc-400"
+              className="text-muted-foreground"
             >
               キャンセル
             </Button>

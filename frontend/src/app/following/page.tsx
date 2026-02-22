@@ -123,9 +123,9 @@ export default function FollowingPage() {
       </div>
 
       {/* Discover section */}
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-zinc-100 text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <Search className="h-4 w-4" />
             ユーザー検索
           </CardTitle>
@@ -139,7 +139,7 @@ export default function FollowingPage() {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleDiscover()}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                className="bg-muted border-border text-foreground"
               />
             </div>
             <Button
@@ -182,9 +182,9 @@ export default function FollowingPage() {
       )}
 
       {/* Targets table */}
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-zinc-100 text-base">
+          <CardTitle className="text-foreground text-base">
             フォローターゲット
           </CardTitle>
         </CardHeader>
@@ -194,14 +194,14 @@ export default function FollowingPage() {
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className="h-12 rounded-lg bg-zinc-800 animate-pulse"
+                  className="h-12 rounded-lg bg-muted animate-pulse"
                 />
               ))}
             </div>
           ) : (targets ?? []).length === 0 ? (
             <div className="text-center py-12">
-              <Users className="h-8 w-8 text-zinc-600 mx-auto mb-3" />
-              <p className="text-zinc-400 text-sm">
+              <Users className="h-8 w-8 text-muted-foreground/60 mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">
                 フォローターゲットがありません。キーワードで検索して追加しましょう。
               </p>
             </div>
@@ -209,23 +209,23 @@ export default function FollowingPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-zinc-800">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">
                       ユーザー名
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">
                       ステータス
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">
                       アクション
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">
                       フォローバック
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">
                       日時
                     </th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-zinc-500 uppercase">
+                    <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">
                       操作
                     </th>
                   </tr>
@@ -234,10 +234,10 @@ export default function FollowingPage() {
                   {(targets ?? []).map((target) => (
                     <tr
                       key={target.id}
-                      className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
                     >
                       <td className="py-3 px-4">
-                        <span className="text-sm text-zinc-100">
+                        <span className="text-sm text-foreground">
                           @{target.x_username}
                         </span>
                       </td>
@@ -250,7 +250,7 @@ export default function FollowingPage() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-sm text-zinc-400">
+                        <span className="text-sm text-muted-foreground">
                           {target.action === "follow"
                             ? "フォロー"
                             : "アンフォロー"}
@@ -262,14 +262,14 @@ export default function FollowingPage() {
                           className={
                             target.follow_back
                               ? "bg-green-500/20 text-green-400 border-green-500/30 text-[10px]"
-                              : "border-zinc-700 text-zinc-500 text-[10px]"
+                              : "border-border text-muted-foreground text-[10px]"
                           }
                         >
                           {target.follow_back ? "あり" : "なし"}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-xs text-zinc-500">
+                        <span className="text-xs text-muted-foreground">
                           {target.followed_at
                             ? formatDate(target.followed_at)
                             : "-"}

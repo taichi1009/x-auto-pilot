@@ -85,18 +85,18 @@ export default function PostsPage() {
           value={filter}
           onValueChange={(v) => setFilter(v as FilterStatus)}
         >
-          <TabsList className="bg-zinc-800/50 border border-zinc-700">
+          <TabsList className="bg-muted/50 border border-border">
             {filterTabs.map((tab) => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 text-zinc-400"
+                className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground"
               >
                 {tab.label}
                 {tab.value !== "all" && posts && (
                   <Badge
                     variant="outline"
-                    className="ml-1.5 h-5 px-1 text-[10px] border-zinc-600"
+                    className="ml-1.5 h-5 px-1 text-[10px] border-border"
                   >
                     {
                       (posts ?? []).filter(
@@ -132,17 +132,17 @@ export default function PostsPage() {
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="h-24 rounded-lg bg-zinc-800 animate-pulse"
+              className="h-24 rounded-lg bg-muted animate-pulse"
             />
           ))}
         </div>
       ) : filteredPosts.length === 0 ? (
         <div className="text-center py-16">
-          <Send className="h-10 w-10 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-zinc-300 mb-2">
+          <Send className="h-10 w-10 text-muted-foreground/60 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground/80 mb-2">
             投稿がありません
           </h3>
-          <p className="text-sm text-zinc-500 mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             新しい投稿を作成して始めましょう
           </p>
           <Link href="/posts/new">
@@ -170,10 +170,10 @@ export default function PostsPage() {
         open={deleteTarget !== null}
         onOpenChange={() => setDeleteTarget(null)}
       >
-        <DialogContent className="bg-zinc-900 border-zinc-800">
+        <DialogContent className="bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-zinc-100">投稿を削除</DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogTitle className="text-foreground">投稿を削除</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               この投稿を削除してもよろしいですか？この操作は取り消せません。
             </DialogDescription>
           </DialogHeader>
@@ -181,7 +181,7 @@ export default function PostsPage() {
             <Button
               variant="ghost"
               onClick={() => setDeleteTarget(null)}
-              className="text-zinc-400"
+              className="text-muted-foreground"
             >
               キャンセル
             </Button>

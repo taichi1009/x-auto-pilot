@@ -9,7 +9,7 @@ from sqlalchemy import desc
 
 from app.models.models import Post, PostStatus, PostType, PostFormat, ThreadPost
 from app.schemas.schemas import PostCreate, PostUpdate
-from app.services.x_api import XApiService
+from app.services.x_api import XApiService, create_x_api_service
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +18,12 @@ RETRY_BASE_DELAY = 2  # seconds
 
 
 class PostService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, user_id: Optional[int] = None) -> None:
         self.db = db
-        self.x_api = XApiService()
+        if user_id is not None:
+            self.x_api = create_x_api_service(db, user_id)
+        else:
+            self.x_api = XApiService()
 
     def create_post(self, data: PostCreate, user_id: Optional[int] = None) -> Post:
         post = Post(

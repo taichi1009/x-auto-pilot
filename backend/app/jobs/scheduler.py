@@ -16,9 +16,10 @@ from app.models.models import (
     PostFormat,
     ImpressionPrediction,
     PostAnalytics,
+    User,
 )
 from app.services.post_service import PostService
-from app.services.ai_service import AIService
+from app.services.ai_service import AIService, create_ai_service
 from app.services.template_service import TemplateService
 from app.services.analytics_service import AnalyticsService
 from app.services.persona_service import PersonaService
@@ -26,7 +27,7 @@ from app.services.strategy_service import StrategyService
 from app.services.prediction_service import PredictionService
 from app.services.auto_pilot_service import AutoPilotService
 from app.services.image_service import ImageService
-from app.services.x_api import XApiService
+from app.services.x_api import XApiService, create_x_api_service
 from app.services.follow_service import FollowService
 from app.utils.time_utils import parse_cron_expression
 
@@ -44,12 +45,13 @@ def execute_scheduled_post(schedule_id: int) -> None:
             logger.info("Schedule %d is inactive or not found, skipping.", schedule_id)
             return
 
-        content, post_format, thread_contents = _generate_content(schedule, db)
+        user_id = schedule.user_id
+        content, post_format, thread_contents = _generate_content(schedule, db, user_id=user_id)
         if not content:
             logger.error("Failed to generate content for schedule %d", schedule_id)
             return
 
-        post_service = PostService(db)
+        post_service = PostService(db, user_id=user_id)
         post = post_service.create_post(
             type(
                 "PostCreate",
@@ -63,12 +65,13 @@ def execute_scheduled_post(schedule_id: int) -> None:
                     "schedule_id": schedule.id,
                     "thread_contents": thread_contents,
                 },
-            )()
+            )(),
+            user_id=user_id,
         )
 
         # Attempt to publish
         try:
-            post_service.publish_post(post.id)
+            post_service.publish_post(post.id, user_id=user_id)
             logger.info(
                 "Scheduled post published: schedule=%d, post=%d, format=%s",
                 schedule_id, post.id, post_format,
@@ -91,18 +94,21 @@ def execute_scheduled_post(schedule_id: int) -> None:
         db.close()
 
 
-def _generate_content(schedule: Schedule, db) -> tuple:
+def _generate_content(schedule: Schedule, db, user_id=None) -> tuple:
     """Generate post content based on the schedule configuration.
 
     Returns (content, post_format, thread_contents).
     """
     if schedule.post_type == PostType.ai_generated and schedule.ai_prompt:
-        ai_service = AIService()
+        if user_id is not None:
+            ai_service = create_ai_service(db, user_id)
+        else:
+            ai_service = AIService()
         persona_service = PersonaService(db)
         strategy_service = StrategyService(db)
 
-        persona = persona_service.get_active_persona()
-        strategy = strategy_service.get_active_strategy()
+        persona = persona_service.get_active_persona(user_id=user_id)
+        strategy = strategy_service.get_active_strategy(user_id=user_id)
 
         # Determine format based on content_mix from strategy
         post_format = _pick_format_from_strategy(strategy)
@@ -166,9 +172,60 @@ def collect_analytics_job() -> None:
     """Periodic job to collect analytics for posted tweets."""
     db = SessionLocal()
     try:
-        analytics_service = AnalyticsService(db)
-        result = analytics_service.collect_analytics()
-        logger.info("Analytics collection job completed: %s", result)
+        # Collect analytics per user: group posts by user_id
+        posted_posts = (
+            db.query(Post)
+            .filter(
+                Post.status == PostStatus.posted,
+                Post.x_tweet_id.isnot(None),
+            )
+            .all()
+        )
+
+        # Group by user_id
+        user_posts = {}
+        for post in posted_posts:
+            uid = post.user_id
+            if uid not in user_posts:
+                user_posts[uid] = []
+            user_posts[uid].append(post)
+
+        total_collected = 0
+        total_errors = 0
+        for uid, posts in user_posts.items():
+            if uid is not None:
+                x_api = create_x_api_service(db, uid)
+            else:
+                x_api = XApiService()
+
+            for post in posts:
+                try:
+                    metrics = x_api.get_tweet_metrics(post.x_tweet_id)
+                    analytics = PostAnalytics(
+                        post_id=post.id,
+                        impressions=metrics.get("impressions", 0),
+                        likes=metrics.get("likes", 0),
+                        retweets=metrics.get("retweets", 0),
+                        replies=metrics.get("replies", 0),
+                        quotes=metrics.get("quotes", 0),
+                        bookmarks=metrics.get("bookmarks", 0),
+                        profile_visits=metrics.get("profile_visits", 0),
+                        collected_at=datetime.utcnow(),
+                    )
+                    db.add(analytics)
+                    total_collected += 1
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to collect analytics for post %d: %s",
+                        post.id, exc,
+                    )
+                    total_errors += 1
+
+        db.commit()
+        logger.info(
+            "Analytics collection job completed: %d succeeded, %d failed",
+            total_collected, total_errors,
+        )
     except Exception as exc:
         logger.error("Analytics collection job failed: %s", exc)
     finally:
@@ -211,110 +268,29 @@ def track_prediction_accuracy() -> None:
 
 
 def auto_post_job() -> None:
-    """Auto-pilot: generate and publish posts automatically."""
+    """Auto-pilot: generate and publish posts automatically for each user."""
     db = SessionLocal()
     try:
-        ap_service = AutoPilotService(db)
-        if not ap_service.is_enabled():
-            return
-        if ap_service.get_setting("auto_post_enabled") != "true":
-            return
-
-        max_posts = int(ap_service.get_setting("auto_post_count") or "3")
-        with_image = ap_service.get_setting("auto_post_with_image") == "true"
-
-        # Check how many posts we've already made today
-        from datetime import date
-        today_start = datetime.combine(date.today(), datetime.min.time())
-        today_count = (
-            db.query(Post)
+        # Find all users with auto_pilot enabled
+        from app.models.models import AppSetting
+        enabled_settings = (
+            db.query(AppSetting)
             .filter(
-                Post.created_at >= today_start,
-                Post.post_type == PostType.ai_generated,
+                AppSetting.key == "auto_pilot_enabled",
+                AppSetting.value == "true",
             )
-            .count()
-        )
-        if today_count >= max_posts:
-            logger.info("Auto-post: daily limit reached (%d/%d)", today_count, max_posts)
-            return
-
-        persona_service = PersonaService(db)
-        strategy_service = StrategyService(db)
-        persona = persona_service.get_active_persona()
-        strategy = strategy_service.get_active_strategy()
-
-        if not strategy:
-            logger.info("Auto-post: no active strategy, skipping")
-            return
-
-        post_format = _pick_format_from_strategy(strategy)
-
-        ai_service = AIService()
-        result = ai_service.generate_posts(
-            genre=", ".join(strategy.content_pillars) if strategy.content_pillars else "general",
-            style="casual",
-            count=1,
-            persona=persona,
-            strategy=strategy,
-            post_format=post_format,
-            thread_length=5,
+            .all()
         )
 
-        if post_format == "thread":
-            threads = result.get("threads", [])
-            content = threads[0][0] if threads and threads[0] else ""
-            thread_contents = threads[0] if threads else []
-        else:
-            posts = result.get("posts", [])
-            content = posts[0] if posts else ""
-            thread_contents = None
-
-        if not content:
-            logger.warning("Auto-post: AI generation returned empty content")
+        user_ids = [s.user_id for s in enabled_settings if s.user_id is not None]
+        if not user_ids:
             return
 
-        post_service = PostService(db)
-        post = post_service.create_post(
-            type("PostCreate", (), {
-                "content": content,
-                "status": "draft",
-                "post_type": "ai_generated",
-                "post_format": post_format,
-                "image_url": None,
-                "persona_id": persona.id if persona else None,
-                "schedule_id": None,
-                "thread_contents": thread_contents,
-            })()
-        )
-
-        # Generate and upload image if enabled
-        media_ids = None
-        image_path = None
-        if with_image and post_format != "thread":
+        for user_id in user_ids:
             try:
-                image_service = ImageService()
-                image_path = image_service.generate_image(
-                    f"Create an eye-catching image for this social media post: {content[:200]}"
-                )
-                if image_path:
-                    x_api = XApiService()
-                    media_id = x_api.upload_media(image_path)
-                    if media_id:
-                        media_ids = [media_id]
-                        post.image_url = image_path
-                        db.commit()
+                _auto_post_for_user(db, user_id)
             except Exception as exc:
-                logger.warning("Auto-post: image generation failed: %s", exc)
-
-        # Publish
-        try:
-            post_service.publish_post(post.id, media_ids=media_ids)
-            logger.info("Auto-post: published post id=%d format=%s", post.id, post_format)
-        except Exception as exc:
-            logger.error("Auto-post: publish failed: %s", exc)
-        finally:
-            if image_path:
-                ImageService().cleanup_image(image_path)
+                logger.error("Auto-post failed for user %d: %s", user_id, exc)
 
     except Exception as exc:
         logger.error("Auto-post job failed: %s", exc)
@@ -322,81 +298,208 @@ def auto_post_job() -> None:
         db.close()
 
 
+def _auto_post_for_user(db, user_id: int) -> None:
+    """Run auto-post logic for a single user."""
+    ap_service = AutoPilotService(db)
+    if ap_service.get_setting("auto_post_enabled", user_id=user_id) != "true":
+        return
+
+    max_posts = int(ap_service.get_setting("auto_post_count", user_id=user_id) or "3")
+    with_image = ap_service.get_setting("auto_post_with_image", user_id=user_id) == "true"
+
+    # Check how many posts we've already made today
+    from datetime import date
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    today_count = (
+        db.query(Post)
+        .filter(
+            Post.user_id == user_id,
+            Post.created_at >= today_start,
+            Post.post_type == PostType.ai_generated,
+        )
+        .count()
+    )
+    if today_count >= max_posts:
+        logger.info("Auto-post: daily limit reached for user %d (%d/%d)", user_id, today_count, max_posts)
+        return
+
+    persona_service = PersonaService(db)
+    strategy_service = StrategyService(db)
+    persona = persona_service.get_active_persona(user_id=user_id)
+    strategy = strategy_service.get_active_strategy(user_id=user_id)
+
+    if not strategy:
+        logger.info("Auto-post: no active strategy for user %d, skipping", user_id)
+        return
+
+    post_format = _pick_format_from_strategy(strategy)
+
+    ai_service = create_ai_service(db, user_id)
+    result = ai_service.generate_posts(
+        genre=", ".join(strategy.content_pillars) if strategy.content_pillars else "general",
+        style="casual",
+        count=1,
+        persona=persona,
+        strategy=strategy,
+        post_format=post_format,
+        thread_length=5,
+    )
+
+    if post_format == "thread":
+        threads = result.get("threads", [])
+        content = threads[0][0] if threads and threads[0] else ""
+        thread_contents = threads[0] if threads else []
+    else:
+        posts = result.get("posts", [])
+        content = posts[0] if posts else ""
+        thread_contents = None
+
+    if not content:
+        logger.warning("Auto-post: AI generation returned empty content for user %d", user_id)
+        return
+
+    post_service = PostService(db, user_id=user_id)
+    post = post_service.create_post(
+        type("PostCreate", (), {
+            "content": content,
+            "status": "draft",
+            "post_type": "ai_generated",
+            "post_format": post_format,
+            "image_url": None,
+            "persona_id": persona.id if persona else None,
+            "schedule_id": None,
+            "thread_contents": thread_contents,
+        })(),
+        user_id=user_id,
+    )
+
+    # Generate and upload image if enabled
+    media_ids = None
+    image_path = None
+    if with_image and post_format != "thread":
+        try:
+            image_service = ImageService()
+            image_path = image_service.generate_image(
+                f"Create an eye-catching image for this social media post: {content[:200]}"
+            )
+            if image_path:
+                x_api = create_x_api_service(db, user_id)
+                media_id = x_api.upload_media(image_path)
+                if media_id:
+                    media_ids = [media_id]
+                    post.image_url = image_path
+                    db.commit()
+        except Exception as exc:
+            logger.warning("Auto-post: image generation failed for user %d: %s", user_id, exc)
+
+    # Publish
+    try:
+        post_service.publish_post(post.id, media_ids=media_ids, user_id=user_id)
+        logger.info("Auto-post: published post id=%d format=%s for user %d", post.id, post_format, user_id)
+    except Exception as exc:
+        logger.error("Auto-post: publish failed for user %d: %s", user_id, exc)
+    finally:
+        if image_path:
+            ImageService().cleanup_image(image_path)
+
+
 def auto_follow_job() -> None:
-    """Auto-pilot: discover and follow users based on keywords."""
+    """Auto-pilot: discover and follow users based on keywords, per user."""
     db = SessionLocal()
     try:
-        ap_service = AutoPilotService(db)
-        if not ap_service.is_enabled():
+        from app.models.models import AppSetting
+        enabled_settings = (
+            db.query(AppSetting)
+            .filter(
+                AppSetting.key == "auto_pilot_enabled",
+                AppSetting.value == "true",
+            )
+            .all()
+        )
+
+        user_ids = [s.user_id for s in enabled_settings if s.user_id is not None]
+        if not user_ids:
             return
-        if ap_service.get_setting("auto_follow_enabled") != "true":
-            return
 
-        keywords_str = ap_service.get_setting("auto_follow_keywords")
-        if not keywords_str.strip():
-            logger.info("Auto-follow: no keywords configured, skipping")
-            return
-
-        daily_limit = int(ap_service.get_setting("auto_follow_daily_limit") or "10")
-        keywords = [k.strip() for k in keywords_str.split(",") if k.strip()]
-
-        follow_service = FollowService(db)
-        x_api = XApiService()
-
-        followed_count = 0
-        for keyword in keywords:
-            if followed_count >= daily_limit:
-                break
-
+        for user_id in user_ids:
             try:
-                # Discover users
-                users = x_api.search_users(keyword, max_results=10)
-                for user_data in users:
-                    if followed_count >= daily_limit:
-                        break
-
-                    # Check if already in targets
-                    from app.models.models import FollowTarget
-                    existing = (
-                        db.query(FollowTarget)
-                        .filter(FollowTarget.x_user_id == user_data["id"])
-                        .first()
-                    )
-                    if existing:
-                        continue
-
-                    # Create follow target
-                    target = FollowTarget(
-                        x_user_id=user_data["id"],
-                        x_username=user_data["username"],
-                    )
-                    db.add(target)
-                    db.commit()
-                    db.refresh(target)
-
-                    # Execute follow
-                    try:
-                        follow_service.execute_follow(target.id)
-                        followed_count += 1
-                        logger.info(
-                            "Auto-follow: followed @%s (%d/%d)",
-                            user_data["username"], followed_count, daily_limit,
-                        )
-                        # Rate limit pause
-                        import time
-                        time.sleep(2)
-                    except Exception as exc:
-                        logger.warning("Auto-follow: failed to follow @%s: %s", user_data["username"], exc)
-
+                _auto_follow_for_user(db, user_id)
             except Exception as exc:
-                logger.warning("Auto-follow: search failed for '%s': %s", keyword, exc)
-
-        logger.info("Auto-follow job completed: %d users followed", followed_count)
+                logger.error("Auto-follow failed for user %d: %s", user_id, exc)
 
     except Exception as exc:
         logger.error("Auto-follow job failed: %s", exc)
     finally:
         db.close()
+
+
+def _auto_follow_for_user(db, user_id: int) -> None:
+    """Run auto-follow logic for a single user."""
+    ap_service = AutoPilotService(db)
+    if ap_service.get_setting("auto_follow_enabled", user_id=user_id) != "true":
+        return
+
+    keywords_str = ap_service.get_setting("auto_follow_keywords", user_id=user_id)
+    if not keywords_str.strip():
+        logger.info("Auto-follow: no keywords configured for user %d, skipping", user_id)
+        return
+
+    daily_limit = int(ap_service.get_setting("auto_follow_daily_limit", user_id=user_id) or "10")
+    keywords = [k.strip() for k in keywords_str.split(",") if k.strip()]
+
+    follow_service = FollowService(db, user_id=user_id)
+    x_api = create_x_api_service(db, user_id)
+
+    followed_count = 0
+    for keyword in keywords:
+        if followed_count >= daily_limit:
+            break
+
+        try:
+            # Discover users
+            users = x_api.search_users(keyword, max_results=10)
+            for user_data in users:
+                if followed_count >= daily_limit:
+                    break
+
+                # Check if already in targets
+                from app.models.models import FollowTarget
+                existing = (
+                    db.query(FollowTarget)
+                    .filter(FollowTarget.x_user_id == user_data["id"])
+                    .first()
+                )
+                if existing:
+                    continue
+
+                # Create follow target
+                target = FollowTarget(
+                    x_user_id=user_data["id"],
+                    x_username=user_data["username"],
+                    user_id=user_id,
+                )
+                db.add(target)
+                db.commit()
+                db.refresh(target)
+
+                # Execute follow
+                try:
+                    follow_service.execute_follow(target.id, user_id=user_id)
+                    followed_count += 1
+                    logger.info(
+                        "Auto-follow: followed @%s for user %d (%d/%d)",
+                        user_data["username"], user_id, followed_count, daily_limit,
+                    )
+                    # Rate limit pause
+                    import time
+                    time.sleep(2)
+                except Exception as exc:
+                    logger.warning("Auto-follow: failed to follow @%s: %s", user_data["username"], exc)
+
+        except Exception as exc:
+            logger.warning("Auto-follow: search failed for '%s': %s", keyword, exc)
+
+    logger.info("Auto-follow job completed for user %d: %d users followed", user_id, followed_count)
 
 
 def sync_schedules() -> None:

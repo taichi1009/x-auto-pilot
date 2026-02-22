@@ -21,7 +21,7 @@ def list_posts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = PostService(db)
+    service = PostService(db, user_id=current_user.id)
     posts, total = service.get_posts(
         skip=skip, limit=limit, status=status, post_type=post_type,
         user_id=current_user.id,
@@ -35,7 +35,7 @@ def get_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = PostService(db)
+    service = PostService(db, user_id=current_user.id)
     return service.get_post(post_id, user_id=current_user.id)
 
 
@@ -45,7 +45,7 @@ def create_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = PostService(db)
+    service = PostService(db, user_id=current_user.id)
     return service.create_post(data, user_id=current_user.id)
 
 
@@ -56,7 +56,7 @@ def update_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = PostService(db)
+    service = PostService(db, user_id=current_user.id)
     return service.update_post(post_id, data, user_id=current_user.id)
 
 
@@ -66,7 +66,7 @@ def delete_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = PostService(db)
+    service = PostService(db, user_id=current_user.id)
     service.delete_post(post_id, user_id=current_user.id)
     return {"detail": "Post deleted successfully."}
 
@@ -77,5 +77,5 @@ def publish_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = PostService(db)
+    service = PostService(db, user_id=current_user.id)
     return service.publish_post(post_id, user_id=current_user.id)

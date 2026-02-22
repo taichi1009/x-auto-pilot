@@ -11,7 +11,7 @@ from app.schemas.schemas import (
     ImpressionPredictRequest,
     ImpressionPredictResponse,
 )
-from app.services.ai_service import AIService
+from app.services.ai_service import create_ai_service
 from app.services.persona_service import PersonaService
 from app.services.strategy_service import StrategyService
 from app.services.prediction_service import PredictionService
@@ -26,7 +26,7 @@ def generate_posts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = AIService()
+    service = create_ai_service(db, current_user.id)
 
     # Get persona and strategy if requested
     persona = None
@@ -62,7 +62,7 @@ def improve_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = AIService()
+    service = create_ai_service(db, current_user.id)
     result = service.improve_post(
         content=data.content,
         feedback=data.feedback,
@@ -76,7 +76,7 @@ def predict_impressions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = PredictionService(db)
+    service = PredictionService(db, user_id=current_user.id)
     result = service.predict_impressions(
         content=data.content,
         post_format=data.post_format,

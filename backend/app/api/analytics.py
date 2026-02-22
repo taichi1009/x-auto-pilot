@@ -18,7 +18,7 @@ def get_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = AnalyticsService(db)
+    service = AnalyticsService(db, user_id=current_user.id)
     return service.get_overview(days=days, user_id=current_user.id)
 
 
@@ -28,7 +28,7 @@ def get_post_analytics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = AnalyticsService(db)
+    service = AnalyticsService(db, user_id=current_user.id)
     return service.get_post_analytics(post_id, user_id=current_user.id)
 
 
@@ -38,7 +38,7 @@ def get_trends(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = AnalyticsService(db)
+    service = AnalyticsService(db, user_id=current_user.id)
     return service.get_trends(days=days, user_id=current_user.id)
 
 
@@ -47,6 +47,6 @@ def collect_analytics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = AnalyticsService(db)
+    service = AnalyticsService(db, user_id=current_user.id)
     result = service.collect_analytics(user_id=current_user.id)
     return result

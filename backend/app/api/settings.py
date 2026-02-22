@@ -1,17 +1,23 @@
 from typing import List, Dict
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.config import settings
 from app.models.models import AppSetting, User
 from app.schemas.schemas import AppSettingCreate, AppSettingResponse
-from app.services.x_api import XApiService
+from app.services.x_api import create_x_api_service
+from app.services.user_settings import get_user_setting
 from app.utils.auth import get_current_user
 from app.utils.rate_limiter import rate_limiter, TIER_LIMITS
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
+
+
+class SettingValueBody(BaseModel):
+    value: str
 
 
 @router.get("", response_model=List[AppSettingResponse])
@@ -25,6 +31,37 @@ def get_settings(
         .all()
     )
     return app_settings
+
+
+@router.put("/{key}")
+def update_setting_by_key(
+    key: str,
+    body: SettingValueBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update or create a single setting by key (frontend calls this)."""
+    existing = (
+        db.query(AppSetting)
+        .filter(
+            AppSetting.key == key,
+            AppSetting.user_id == current_user.id,
+        )
+        .first()
+    )
+    if existing:
+        existing.value = body.value
+    else:
+        existing = AppSetting(
+            key=key,
+            value=body.value,
+            category="api",
+            user_id=current_user.id,
+        )
+        db.add(existing)
+    db.commit()
+    db.refresh(existing)
+    return AppSettingResponse.model_validate(existing)
 
 
 @router.put("")
@@ -67,9 +104,10 @@ def update_settings(
 
 @router.post("/test-connection")
 def test_connection(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    x_api = XApiService()
+    x_api = create_x_api_service(db, current_user.id)
     result = x_api.test_connection()
     return result
 
@@ -79,7 +117,8 @@ def get_api_usage(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    tier = settings.X_API_TIER.lower()
+    tier = get_user_setting(db, current_user.id, "api_tier") or settings.X_API_TIER
+    tier = tier.lower()
     usage = rate_limiter.get_usage_from_db(db, tier)
     limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
 

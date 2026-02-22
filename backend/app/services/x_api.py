@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List
 
 import tweepy
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
 from app.config import settings
 
@@ -30,8 +31,21 @@ TIER_LIMITS: Dict[str, Dict[str, int]] = {
 
 
 class XApiService:
-    def __init__(self) -> None:
-        self.current_tier = settings.X_API_TIER.lower()
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
+        access_token: Optional[str] = None,
+        access_token_secret: Optional[str] = None,
+        bearer_token: Optional[str] = None,
+        api_tier: Optional[str] = None,
+    ) -> None:
+        self._api_key = api_key or settings.X_API_KEY
+        self._api_secret = api_secret or settings.X_API_SECRET
+        self._access_token = access_token or settings.X_ACCESS_TOKEN
+        self._access_token_secret = access_token_secret or settings.X_ACCESS_TOKEN_SECRET
+        self._bearer_token = bearer_token or settings.X_BEARER_TOKEN
+        self.current_tier = (api_tier or settings.X_API_TIER).lower()
         self._client: Optional[tweepy.Client] = None
         self._api_v1: Optional[tweepy.API] = None
 
@@ -39,11 +53,11 @@ class XApiService:
     def client(self) -> tweepy.Client:
         if self._client is None:
             self._client = tweepy.Client(
-                bearer_token=settings.X_BEARER_TOKEN or None,
-                consumer_key=settings.X_API_KEY or None,
-                consumer_secret=settings.X_API_SECRET or None,
-                access_token=settings.X_ACCESS_TOKEN or None,
-                access_token_secret=settings.X_ACCESS_TOKEN_SECRET or None,
+                bearer_token=self._bearer_token or None,
+                consumer_key=self._api_key or None,
+                consumer_secret=self._api_secret or None,
+                access_token=self._access_token or None,
+                access_token_secret=self._access_token_secret or None,
                 wait_on_rate_limit=True,
             )
         return self._client
@@ -53,10 +67,10 @@ class XApiService:
         """Tweepy v1.1 API for media upload."""
         if self._api_v1 is None:
             auth = tweepy.OAuth1UserHandler(
-                consumer_key=settings.X_API_KEY or "",
-                consumer_secret=settings.X_API_SECRET or "",
-                access_token=settings.X_ACCESS_TOKEN or "",
-                access_token_secret=settings.X_ACCESS_TOKEN_SECRET or "",
+                consumer_key=self._api_key or "",
+                consumer_secret=self._api_secret or "",
+                access_token=self._access_token or "",
+                access_token_secret=self._access_token_secret or "",
             )
             self._api_v1 = tweepy.API(auth, wait_on_rate_limit=True)
         return self._api_v1
@@ -242,3 +256,18 @@ class XApiService:
             }
         except tweepy.TweepyException as exc:
             return {"connected": False, "error": str(exc)}
+
+
+def create_x_api_service(db: Session, user_id: int) -> XApiService:
+    """Factory: build an XApiService using per-user settings from the DB."""
+    from app.services.user_settings import get_x_api_settings
+
+    cfg = get_x_api_settings(db, user_id)
+    return XApiService(
+        api_key=cfg["api_key"] or None,
+        api_secret=cfg["api_secret"] or None,
+        access_token=cfg["access_token"] or None,
+        access_token_secret=cfg["access_token_secret"] or None,
+        bearer_token=cfg["bearer_token"] or None,
+        api_tier=cfg["api_tier"] or None,
+    )

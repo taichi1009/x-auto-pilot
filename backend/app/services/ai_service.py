@@ -10,6 +10,23 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+LANGUAGE_NAMES = {
+    "ja": "Japanese (日本語)",
+    "en": "English",
+    "zh": "Chinese (中文)",
+    "ko": "Korean (한국어)",
+    "es": "Spanish (Español)",
+}
+
+
+def _build_language_instruction(language: str) -> str:
+    """Build a language instruction string for system prompts."""
+    lang_name = LANGUAGE_NAMES.get(language, language)
+    return (
+        f"\nIMPORTANT: Generate ALL content in {lang_name}. "
+        "Use natural, native-level expressions."
+    )
+
 
 class AIService:
     def __init__(
@@ -124,11 +141,12 @@ class AIService:
         persona=None,
         strategy=None,
         thread_length: int = 3,
+        language: str = "ja",
     ) -> Dict[str, Any]:
         if post_format == "long_form":
-            return self.generate_long_form(genre, style, count, custom_prompt, persona, strategy)
+            return self.generate_long_form(genre, style, count, custom_prompt, persona, strategy, language=language)
         if post_format == "thread":
-            return self.generate_thread(genre, style, count, custom_prompt, persona, strategy, thread_length)
+            return self.generate_thread(genre, style, count, custom_prompt, persona, strategy, thread_length, language=language)
 
         system_prompt = (
             "You are an expert social media strategist specializing in X (Twitter). "
@@ -137,6 +155,7 @@ class AIService:
             "Include relevant hashtags when appropriate. "
             "Return ONLY a valid JSON array of strings, no other text."
         )
+        system_prompt += _build_language_instruction(language)
         system_prompt += self._build_persona_context(persona)
         system_prompt += self._build_strategy_context(strategy)
 
@@ -187,6 +206,7 @@ class AIService:
         custom_prompt: Optional[str] = None,
         persona=None,
         strategy=None,
+        language: str = "ja",
     ) -> Dict[str, Any]:
         """Generate long-form posts (1,000-5,000 chars)."""
         system_prompt = (
@@ -195,6 +215,7 @@ class AIService:
             "Structure them with clear paragraphs and engaging hooks. "
             "Return ONLY a valid JSON array of strings, no other text."
         )
+        system_prompt += _build_language_instruction(language)
         system_prompt += self._build_persona_context(persona)
         system_prompt += self._build_strategy_context(strategy)
 
@@ -235,6 +256,7 @@ class AIService:
         persona=None,
         strategy=None,
         thread_length: int = 3,
+        language: str = "ja",
     ) -> Dict[str, Any]:
         """Generate thread posts (each tweet 280 chars max)."""
         system_prompt = (
@@ -243,6 +265,7 @@ class AIService:
             "Each tweet in the thread MUST be 280 characters or fewer. "
             "Return ONLY a valid JSON object with key 'threads' containing an array of arrays of strings."
         )
+        system_prompt += _build_language_instruction(language)
         system_prompt += self._build_persona_context(persona)
         system_prompt += self._build_strategy_context(strategy)
 
@@ -291,6 +314,7 @@ class AIService:
         self,
         content: str,
         feedback: Optional[str] = None,
+        language: str = "ja",
     ) -> Dict[str, str]:
         system_prompt = (
             "You are an expert social media copywriter. "
@@ -298,6 +322,7 @@ class AIService:
             "The improved version MUST be 280 characters or fewer. "
             "Return ONLY valid JSON with keys: 'improved' and 'explanation'."
         )
+        system_prompt += _build_language_instruction(language)
 
         user_prompt = f'Improve this X post:\n\n"{content}"'
         if feedback:

@@ -285,6 +285,7 @@ export interface AIGenerateRequest {
   post_format?: PostFormat;
   use_persona?: boolean;
   thread_length?: number;
+  language?: string;
 }
 
 export interface AIGenerateResponse {
@@ -299,6 +300,7 @@ export interface AIImproveRequest {
   content: string;
   feedback?: string | null;
   post_format?: PostFormat;
+  language?: string;
 }
 
 export interface AIImproveResponse {

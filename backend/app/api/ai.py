@@ -15,6 +15,7 @@ from app.services.ai_service import create_ai_service
 from app.services.persona_service import PersonaService
 from app.services.strategy_service import StrategyService
 from app.services.prediction_service import PredictionService
+from app.services.user_settings import get_user_setting
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
@@ -27,6 +28,9 @@ def generate_posts(
     current_user: User = Depends(get_current_user),
 ):
     service = create_ai_service(db, current_user.id)
+
+    # Resolve language: request > user setting > default
+    language = data.language or get_user_setting(db, current_user.id, "language") or "ja"
 
     # Get persona and strategy if requested
     persona = None
@@ -46,6 +50,7 @@ def generate_posts(
         persona=persona,
         strategy=strategy,
         thread_length=data.thread_length,
+        language=language,
     )
     return AIGenerateResponse(
         posts=result.get("posts", []),
@@ -63,9 +68,11 @@ def improve_post(
     current_user: User = Depends(get_current_user),
 ):
     service = create_ai_service(db, current_user.id)
+    language = data.language or get_user_setting(db, current_user.id, "language") or "ja"
     result = service.improve_post(
         content=data.content,
         feedback=data.feedback,
+        language=language,
     )
     return AIImproveResponse(**result)
 

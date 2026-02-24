@@ -21,6 +21,18 @@ from app.utils.auth import get_current_user
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
 
+def _resolve_max_length(db: Session, user_id: int, request_max_length, post_format: str) -> int:
+    """Resolve max_length: request > user setting > format default."""
+    if request_max_length:
+        return request_max_length
+    if post_format == "long_form":
+        user_val = get_user_setting(db, user_id, "max_length_long_form")
+        return int(user_val) if user_val else 5000
+    else:
+        user_val = get_user_setting(db, user_id, "max_length_tweet")
+        return int(user_val) if user_val else 280
+
+
 @router.post("/generate", response_model=AIGenerateResponse)
 def generate_posts(
     data: AIGenerateRequest,
@@ -31,6 +43,9 @@ def generate_posts(
 
     # Resolve language: request > user setting > default
     language = data.language or get_user_setting(db, current_user.id, "language") or "ja"
+
+    # Resolve max_length: request > user setting > format default
+    max_length = _resolve_max_length(db, current_user.id, data.max_length, data.post_format)
 
     # Get persona and strategy if requested
     persona = None
@@ -51,6 +66,7 @@ def generate_posts(
         strategy=strategy,
         thread_length=data.thread_length,
         language=language,
+        max_length=max_length,
     )
     return AIGenerateResponse(
         posts=result.get("posts", []),
@@ -69,10 +85,12 @@ def improve_post(
 ):
     service = create_ai_service(db, current_user.id)
     language = data.language or get_user_setting(db, current_user.id, "language") or "ja"
+    max_length = _resolve_max_length(db, current_user.id, data.max_length, data.post_format)
     result = service.improve_post(
         content=data.content,
         feedback=data.feedback,
         language=language,
+        max_length=max_length,
     )
     return AIImproveResponse(**result)
 

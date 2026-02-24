@@ -142,16 +142,17 @@ class AIService:
         strategy=None,
         thread_length: int = 3,
         language: str = "ja",
+        max_length: int = 280,
     ) -> Dict[str, Any]:
         if post_format == "long_form":
-            return self.generate_long_form(genre, style, count, custom_prompt, persona, strategy, language=language)
+            return self.generate_long_form(genre, style, count, custom_prompt, persona, strategy, language=language, max_length=max_length)
         if post_format == "thread":
-            return self.generate_thread(genre, style, count, custom_prompt, persona, strategy, thread_length, language=language)
+            return self.generate_thread(genre, style, count, custom_prompt, persona, strategy, thread_length, language=language, max_length=max_length)
 
         system_prompt = (
             "You are an expert social media strategist specializing in X (Twitter). "
             "You create viral, engaging posts that drive impressions and engagement. "
-            "Every post MUST be 280 characters or fewer. "
+            f"Every post MUST be {max_length} characters or fewer. "
             "Include relevant hashtags when appropriate. "
             "Return ONLY a valid JSON array of strings, no other text."
         )
@@ -162,7 +163,7 @@ class AIService:
         user_prompt = (
             f"Generate {count} buzz-worthy X (Twitter) posts about '{genre}'. "
             f"Writing style: {style}. "
-            f"Each post must be 280 characters max including hashtags. "
+            f"Each post must be {max_length} characters max including hashtags. "
             f"Make them attention-grabbing with hooks that stop scrolling."
         )
 
@@ -181,10 +182,10 @@ class AIService:
                 raise ValueError("Response is not a list")
             validated_posts = []
             for post in posts:
-                if isinstance(post, str) and len(post) <= 280:
+                if isinstance(post, str) and len(post) <= max_length:
                     validated_posts.append(post)
                 elif isinstance(post, str):
-                    validated_posts.append(post[:277] + "...")
+                    validated_posts.append(post[:max_length - 3] + "...")
             return {"posts": validated_posts[:count], "post_format": "tweet"}
         except json.JSONDecodeError:
             logger.error("Failed to parse AI response as JSON: %s", response_text)
@@ -207,11 +208,13 @@ class AIService:
         persona=None,
         strategy=None,
         language: str = "ja",
+        max_length: int = 5000,
     ) -> Dict[str, Any]:
-        """Generate long-form posts (1,000-5,000 chars)."""
+        """Generate long-form posts (up to max_length chars)."""
+        min_length = min(1000, max_length // 2)
         system_prompt = (
             "You are an expert content creator for X (Twitter) long-form posts. "
-            "Create compelling, in-depth posts between 1,000 and 5,000 characters. "
+            f"Create compelling, in-depth posts between {min_length} and {max_length} characters. "
             "Structure them with clear paragraphs and engaging hooks. "
             "Return ONLY a valid JSON array of strings, no other text."
         )
@@ -222,7 +225,7 @@ class AIService:
         user_prompt = (
             f"Generate {count} long-form X post(s) about '{genre}'. "
             f"Writing style: {style}. "
-            f"Each post should be 1,000-5,000 characters. "
+            f"Each post should be {min_length}-{max_length} characters. "
             f"Include compelling hooks, clear structure, and a call to action."
         )
 
@@ -257,12 +260,13 @@ class AIService:
         strategy=None,
         thread_length: int = 3,
         language: str = "ja",
+        max_length: int = 280,
     ) -> Dict[str, Any]:
-        """Generate thread posts (each tweet 280 chars max)."""
+        """Generate thread posts (each tweet max_length chars max)."""
         system_prompt = (
             "You are an expert X (Twitter) thread creator. "
             "Create compelling threads that tell a story or explain a topic step by step. "
-            "Each tweet in the thread MUST be 280 characters or fewer. "
+            f"Each tweet in the thread MUST be {max_length} characters or fewer. "
             "Return ONLY a valid JSON object with key 'threads' containing an array of arrays of strings."
         )
         system_prompt += _build_language_instruction(language)
@@ -272,7 +276,7 @@ class AIService:
         user_prompt = (
             f"Generate {count} X thread(s) about '{genre}', each with {thread_length} tweets. "
             f"Writing style: {style}. "
-            f"Each tweet must be 280 characters max. "
+            f"Each tweet must be {max_length} characters max. "
             f"First tweet should be a strong hook. Last tweet should have a CTA."
         )
 
@@ -291,10 +295,10 @@ class AIService:
             for thread in threads[:count]:
                 validated_thread = []
                 for tweet in thread[:thread_length]:
-                    if isinstance(tweet, str) and len(tweet) <= 280:
+                    if isinstance(tweet, str) and len(tweet) <= max_length:
                         validated_thread.append(tweet)
                     elif isinstance(tweet, str):
-                        validated_thread.append(tweet[:277] + "...")
+                        validated_thread.append(tweet[:max_length - 3] + "...")
                 if validated_thread:
                     validated_threads.append(validated_thread)
             first_thread_posts = validated_threads[0] if validated_threads else []
@@ -315,11 +319,12 @@ class AIService:
         content: str,
         feedback: Optional[str] = None,
         language: str = "ja",
+        max_length: int = 280,
     ) -> Dict[str, str]:
         system_prompt = (
             "You are an expert social media copywriter. "
             "Improve the given X (Twitter) post to maximize engagement. "
-            "The improved version MUST be 280 characters or fewer. "
+            f"The improved version MUST be {max_length} characters or fewer. "
             "Return ONLY valid JSON with keys: 'improved' and 'explanation'."
         )
         system_prompt += _build_language_instruction(language)
@@ -337,8 +342,8 @@ class AIService:
             response_text = self.call_llm(system_prompt, user_prompt, 512)
             result = json.loads(response_text)
             improved = result.get("improved", content)
-            if len(improved) > 280:
-                improved = improved[:277] + "..."
+            if len(improved) > max_length:
+                improved = improved[:max_length - 3] + "..."
             return {
                 "original": content,
                 "improved": improved,

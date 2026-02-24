@@ -279,6 +279,7 @@ class AIGenerateRequest(BaseModel):
     use_persona: bool = Field(False, description="Use active persona for generation")
     thread_length: int = Field(3, ge=2, le=25, description="Number of tweets in thread")
     language: Optional[str] = Field(None, description="Language code for content generation (e.g. ja, en, zh)")
+    max_length: Optional[int] = Field(None, description="Max character length for generated posts")
 
 
 class AIGenerateResponse(BaseModel):
@@ -294,6 +295,7 @@ class AIImproveRequest(BaseModel):
     feedback: Optional[str] = Field(None, description="Specific feedback for improvement")
     post_format: str = Field("tweet", description="Format: tweet, long_form, thread")
     language: Optional[str] = Field(None, description="Language code for content generation (e.g. ja, en, zh)")
+    max_length: Optional[int] = Field(None, description="Max character length for improved post")
 
 
 class AIImproveResponse(BaseModel):

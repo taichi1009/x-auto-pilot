@@ -117,6 +117,14 @@ def _generate_content(schedule: Schedule, db, user_id=None) -> tuple:
         # Determine format based on content_mix from strategy
         post_format = _pick_format_from_strategy(strategy)
 
+        # Resolve max_length from user settings
+        if post_format == "long_form":
+            ml_val = (get_user_setting(db, user_id, "max_length_long_form") if user_id else "") or ""
+            max_length = int(ml_val) if ml_val else 5000
+        else:
+            ml_val = (get_user_setting(db, user_id, "max_length_tweet") if user_id else "") or ""
+            max_length = int(ml_val) if ml_val else 280
+
         result = ai_service.generate_posts(
             genre=schedule.ai_prompt,
             style="casual",
@@ -126,6 +134,7 @@ def _generate_content(schedule: Schedule, db, user_id=None) -> tuple:
             post_format=post_format,
             thread_length=5,
             language=language,
+            max_length=max_length,
         )
 
         if post_format == "thread":
@@ -340,6 +349,14 @@ def _auto_post_for_user(db, user_id: int) -> None:
     post_format = _pick_format_from_strategy(strategy)
     language = get_user_setting(db, user_id, "language") or "ja"
 
+    # Resolve max_length from user settings
+    if post_format == "long_form":
+        ml_val = get_user_setting(db, user_id, "max_length_long_form") or ""
+        max_length = int(ml_val) if ml_val else 5000
+    else:
+        ml_val = get_user_setting(db, user_id, "max_length_tweet") or ""
+        max_length = int(ml_val) if ml_val else 280
+
     ai_service = create_ai_service(db, user_id)
     result = ai_service.generate_posts(
         genre=", ".join(strategy.content_pillars) if strategy.content_pillars else "general",
@@ -350,6 +367,7 @@ def _auto_post_for_user(db, user_id: int) -> None:
         post_format=post_format,
         thread_length=5,
         language=language,
+        max_length=max_length,
     )
 
     if post_format == "thread":

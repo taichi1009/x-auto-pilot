@@ -1,11 +1,13 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import engine, Base
+from app.database import engine, Base, get_db
+from app.utils.auth import get_current_user
 from app.api.posts import router as posts_router
 from app.api.templates import router as templates_router
 from app.api.schedules import router as schedules_router
@@ -155,4 +157,53 @@ def health_check():
         "status": "healthy",
         "version": "1.0.0",
         "tier": settings.X_API_TIER,
+    }
+
+
+@app.get("/api/dashboard")
+def get_dashboard(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from datetime import datetime, date
+    from app.models.models import Post, PostStatus
+    from app.schemas.schemas import PostResponse
+    from app.utils.rate_limiter import rate_limiter, TIER_LIMITS
+    from app.services.user_settings import get_user_setting
+
+    total_posts = (
+        db.query(Post)
+        .filter(Post.user_id == current_user.id, Post.status == PostStatus.posted)
+        .count()
+    )
+
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    posts_today = (
+        db.query(Post)
+        .filter(
+            Post.user_id == current_user.id,
+            Post.created_at >= today_start,
+        )
+        .count()
+    )
+
+    tier = get_user_setting(db, current_user.id, "api_tier") or settings.X_API_TIER
+    tier = tier.lower()
+    usage = rate_limiter.get_usage_from_db(db, tier)
+    limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+
+    recent_posts = (
+        db.query(Post)
+        .filter(Post.user_id == current_user.id)
+        .order_by(Post.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    return {
+        "total_posts": total_posts,
+        "posts_today": posts_today,
+        "api_usage_count": usage.get("post", 0),
+        "api_usage_limit": limits.get("posts_per_month", 0),
+        "recent_posts": [PostResponse.model_validate(p).model_dump() for p in recent_posts],
     }

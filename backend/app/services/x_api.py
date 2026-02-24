@@ -149,13 +149,13 @@ class XApiService:
     def get_tweet_metrics(self, tweet_id: str) -> Dict[str, Any]:
         self.require_tier("basic")
         try:
+            tweet_fields = ["public_metrics"]
+            if not self._is_oauth2:
+                # non_public_metrics and organic_metrics require OAuth 1.0a
+                tweet_fields.extend(["non_public_metrics", "organic_metrics"])
             response = self.client.get_tweet(
                 tweet_id,
-                tweet_fields=[
-                    "public_metrics",
-                    "non_public_metrics",
-                    "organic_metrics",
-                ],
+                tweet_fields=tweet_fields,
             )
             if response.data is None:
                 raise HTTPException(

@@ -21,6 +21,9 @@ _ENV_FALLBACK: Dict[str, str] = {
     "claude_api_key": "CLAUDE_API_KEY",
     "openai_api_key": "OPENAI_API_KEY",
     "ai_provider": "AI_PROVIDER",
+    "language": "DEFAULT_LANGUAGE",
+    "max_length_tweet": "DEFAULT_MAX_LENGTH_TWEET",
+    "max_length_long_form": "DEFAULT_MAX_LENGTH_LONG_FORM",
 }
 
 

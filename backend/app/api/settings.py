@@ -109,7 +109,15 @@ def test_connection(
 ):
     x_api = create_x_api_service(db, current_user.id)
     result = x_api.test_connection()
-    return result
+    if result.get("connected"):
+        return {
+            "success": True,
+            "message": f"接続成功: @{result.get('username', '')} ({result.get('tier', 'free')}プラン)",
+        }
+    return {
+        "success": False,
+        "message": result.get("error", "接続に失敗しました"),
+    }
 
 
 @router.get("/api-usage")

@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: x-auto-pilot-api
+    runtime: python
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: x-auto-pilot-db
+          property: connectionURI
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: AI_PROVIDER
+        value: claude
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+
+databases:
+  - name: x-auto-pilot-db
+    plan: free
+    region: oregon
+    databaseName: x_auto_pilot

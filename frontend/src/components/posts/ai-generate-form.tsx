@@ -245,7 +245,7 @@ export function AIGenerateForm({
                       <div>
                         <p className="whitespace-pre-wrap">{tweet}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {tweet.length}/280
+                          {tweet.length}/{maxChars}
                         </p>
                       </div>
                     </div>

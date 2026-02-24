@@ -12,6 +12,8 @@ import {
   Zap,
   CreditCard,
   Crown,
+  Languages,
+  Type,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +48,9 @@ interface SettingsState {
   default_interval: string;
   auto_follow_enabled: boolean;
   pdca_auto_apply: boolean;
+  language: string;
+  max_length_tweet: string;
+  max_length_long_form: string;
 }
 
 const defaultSettings: SettingsState = {
@@ -62,6 +67,9 @@ const defaultSettings: SettingsState = {
   default_interval: "60",
   auto_follow_enabled: false,
   pdca_auto_apply: false,
+  language: "ja",
+  max_length_tweet: "280",
+  max_length_long_form: "5000",
 };
 
 const pricingPlans = [
@@ -162,6 +170,9 @@ export default function SettingsPage() {
       default_interval: map["default_interval"] ?? "60",
       auto_follow_enabled: map["auto_follow_enabled"] === "true",
       pdca_auto_apply: map["pdca_auto_apply"] === "true",
+      language: map["language"] ?? "ja",
+      max_length_tweet: map["max_length_tweet"] ?? "280",
+      max_length_long_form: map["max_length_long_form"] ?? "5000",
     });
   }, [settingsData]);
 
@@ -522,6 +533,130 @@ export default function SettingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-foreground/80 flex items-center gap-1.5">
+              <Languages className="h-4 w-4" />
+              AI投稿の言語
+            </Label>
+            <Select
+              value={settings.language}
+              onValueChange={(v) =>
+                setSettings({ ...settings, language: v })
+              }
+            >
+              <SelectTrigger className="bg-muted border-border text-foreground w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-muted border-border">
+                <SelectItem value="ja" className="text-foreground focus:bg-muted">
+                  日本語
+                </SelectItem>
+                <SelectItem value="en" className="text-foreground focus:bg-muted">
+                  English
+                </SelectItem>
+                <SelectItem value="zh" className="text-foreground focus:bg-muted">
+                  中文
+                </SelectItem>
+                <SelectItem value="ko" className="text-foreground focus:bg-muted">
+                  한국어
+                </SelectItem>
+                <SelectItem value="es" className="text-foreground focus:bg-muted">
+                  Español
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              AI生成コンテンツの言語を選択します
+            </p>
+          </div>
+
+          <Separator className="bg-muted" />
+
+          <div className="space-y-4">
+            <Label className="text-foreground/80 flex items-center gap-1.5">
+              <Type className="h-4 w-4" />
+              AI投稿の最大文字数
+            </Label>
+
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-foreground/60 text-xs">ツイート / スレッド</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={25000}
+                    value={settings.max_length_tweet}
+                    onChange={(e) =>
+                      setSettings({ ...settings, max_length_tweet: e.target.value })
+                    }
+                    className="bg-muted border-border text-foreground w-28"
+                  />
+                  <span className="text-xs text-muted-foreground">文字</span>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[140, 280, 500, 1000].map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() =>
+                          setSettings({ ...settings, max_length_tweet: String(v) })
+                        }
+                        className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
+                          settings.max_length_tweet === String(v)
+                            ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
+                            : "bg-muted border-border text-muted-foreground hover:border-foreground/30"
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-foreground/60 text-xs">長文投稿</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={25000}
+                    value={settings.max_length_long_form}
+                    onChange={(e) =>
+                      setSettings({ ...settings, max_length_long_form: e.target.value })
+                    }
+                    className="bg-muted border-border text-foreground w-28"
+                  />
+                  <span className="text-xs text-muted-foreground">文字</span>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[1000, 3000, 5000, 10000].map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() =>
+                          setSettings({ ...settings, max_length_long_form: String(v) })
+                        }
+                        className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
+                          settings.max_length_long_form === String(v)
+                            ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
+                            : "bg-muted border-border text-muted-foreground hover:border-foreground/30"
+                        }`}
+                      >
+                        {v.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              AI生成コンテンツの最大文字数を設定します。スレッドの各ツイートにはツイートの設定が適用されます。
+            </p>
+          </div>
+
+          <Separator className="bg-muted" />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-foreground/80">デフォルトジャンル</Label>

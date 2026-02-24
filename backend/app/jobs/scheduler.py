@@ -29,6 +29,7 @@ from app.services.auto_pilot_service import AutoPilotService
 from app.services.image_service import ImageService
 from app.services.x_api import XApiService, create_x_api_service
 from app.services.follow_service import FollowService
+from app.services.user_settings import get_user_setting
 from app.utils.time_utils import parse_cron_expression
 
 logger = logging.getLogger(__name__)
@@ -110,8 +111,19 @@ def _generate_content(schedule: Schedule, db, user_id=None) -> tuple:
         persona = persona_service.get_active_persona(user_id=user_id)
         strategy = strategy_service.get_active_strategy(user_id=user_id)
 
+        # Resolve language from user settings
+        language = (get_user_setting(db, user_id, "language") if user_id else "") or "ja"
+
         # Determine format based on content_mix from strategy
         post_format = _pick_format_from_strategy(strategy)
+
+        # Resolve max_length from user settings
+        if post_format == "long_form":
+            ml_val = (get_user_setting(db, user_id, "max_length_long_form") if user_id else "") or ""
+            max_length = int(ml_val) if ml_val else 5000
+        else:
+            ml_val = (get_user_setting(db, user_id, "max_length_tweet") if user_id else "") or ""
+            max_length = int(ml_val) if ml_val else 280
 
         result = ai_service.generate_posts(
             genre=schedule.ai_prompt,
@@ -121,6 +133,8 @@ def _generate_content(schedule: Schedule, db, user_id=None) -> tuple:
             strategy=strategy,
             post_format=post_format,
             thread_length=5,
+            language=language,
+            max_length=max_length,
         )
 
         if post_format == "thread":
@@ -333,6 +347,15 @@ def _auto_post_for_user(db, user_id: int) -> None:
         return
 
     post_format = _pick_format_from_strategy(strategy)
+    language = get_user_setting(db, user_id, "language") or "ja"
+
+    # Resolve max_length from user settings
+    if post_format == "long_form":
+        ml_val = get_user_setting(db, user_id, "max_length_long_form") or ""
+        max_length = int(ml_val) if ml_val else 5000
+    else:
+        ml_val = get_user_setting(db, user_id, "max_length_tweet") or ""
+        max_length = int(ml_val) if ml_val else 280
 
     ai_service = create_ai_service(db, user_id)
     result = ai_service.generate_posts(
@@ -343,6 +366,8 @@ def _auto_post_for_user(db, user_id: int) -> None:
         strategy=strategy,
         post_format=post_format,
         thread_length=5,
+        language=language,
+        max_length=max_length,
     )
 
     if post_format == "thread":

@@ -92,7 +92,7 @@ async def lifespan(app: FastAPI):
         if not admin:
             admin = User(
                 email="admin@example.com",
-                hashed_password=hash_password("Admin@2026!"),
+                hashed_password=hash_password("Admin2026"),
                 name="Admin",
                 role=UserRole.admin,
                 subscription_tier=SubscriptionTier.enterprise,
@@ -100,7 +100,12 @@ async def lifespan(app: FastAPI):
             )
             db.add(admin)
             db.commit()
-            logger.info("Default admin user created (admin@example.com / Admin@2026!)")
+            logger.info("Default admin user created (admin@example.com)")
+        else:
+            # Reset admin password on startup to ensure it works
+            admin.hashed_password = hash_password("Admin2026")
+            db.commit()
+            logger.info("Admin password reset on startup")
 
         # Seed admin API key settings from env vars (every startup)
         _seed_admin_settings(db, admin.id)

@@ -14,10 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { adminApi } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
-import type { User, XOAuthStatus } from "@/types";
+import type { User, XOAuthStatus, AutoPilotStatus } from "@/types";
 import Link from "next/link";
 
 export default function AdminUserDetailPage() {
@@ -34,6 +35,10 @@ export default function AdminUserDetailPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [xStatus, setXStatus] = useState<XOAuthStatus | null>(null);
+  const [apStatus, setApStatus] = useState<AutoPilotStatus | null>(null);
+  const [apSettings, setApSettings] = useState<Partial<AutoPilotStatus>>({});
+  const [apSaving, setApSaving] = useState(false);
+  const [apToggling, setApToggling] = useState(false);
 
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
@@ -44,13 +49,23 @@ export default function AdminUserDetailPage() {
     Promise.all([
       adminApi.getUser(userId),
       adminApi.xOAuthStatus(userId),
+      adminApi.autoPilotStatus(userId),
     ])
-      .then(([u, xs]) => {
+      .then(([u, xs, ap]) => {
         setTargetUser(u);
         setRole(u.role);
         setTier(u.subscription_tier);
         setIsActive(u.is_active);
         setXStatus(xs);
+        setApStatus(ap);
+        setApSettings({
+          auto_post_enabled: ap.auto_post_enabled,
+          auto_post_count: ap.auto_post_count,
+          auto_post_with_image: ap.auto_post_with_image,
+          auto_follow_enabled: ap.auto_follow_enabled,
+          auto_follow_keywords: ap.auto_follow_keywords,
+          auto_follow_daily_limit: ap.auto_follow_daily_limit,
+        });
       })
       .catch(() => router.push("/admin"))
       .finally(() => setLoading(false));
@@ -73,6 +88,36 @@ export default function AdminUserDetailPage() {
       setTimeout(() => setMessage(null), 3000);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleApToggle = async () => {
+    setApToggling(true);
+    try {
+      const updated = await adminApi.autoPilotToggle(userId);
+      setApStatus(updated);
+      setMessage(updated.enabled ? "Auto-PilotをONにしました" : "Auto-PilotをOFFにしました");
+      setTimeout(() => setMessage(null), 3000);
+    } catch {
+      setMessage("Auto-Pilotの切替に失敗しました");
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setApToggling(false);
+    }
+  };
+
+  const handleApSave = async () => {
+    setApSaving(true);
+    try {
+      const updated = await adminApi.autoPilotUpdateSettings(userId, apSettings);
+      setApStatus(updated);
+      setMessage("Auto-Pilot設定を保存しました");
+      setTimeout(() => setMessage(null), 3000);
+    } catch {
+      setMessage("Auto-Pilot設定の保存に失敗しました");
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setApSaving(false);
     }
   };
 
@@ -223,6 +268,115 @@ export default function AdminUserDetailPage() {
               トークンの有効期限が切れています
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Auto-Pilot Settings */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground">Auto-Pilot設定</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Auto-Pilot Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-foreground/80">Auto-Pilot</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                自動投稿・自動フォローを有効にします
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {apStatus?.enabled ? (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  ON
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-border text-muted-foreground text-xs">
+                  OFF
+                </Badge>
+              )}
+              <Switch
+                checked={apStatus?.enabled ?? false}
+                onCheckedChange={handleApToggle}
+                disabled={apToggling}
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-4">
+            {/* Auto Post Settings */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-foreground">自動投稿</h4>
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground/80 text-sm">自動投稿を有効にする</Label>
+                <Switch
+                  checked={apSettings.auto_post_enabled ?? false}
+                  onCheckedChange={(v) => setApSettings((s) => ({ ...s, auto_post_enabled: v }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground/80 text-sm">1日の投稿数</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  className="w-20 bg-muted border-border text-foreground"
+                  value={apSettings.auto_post_count ?? 3}
+                  onChange={(e) => setApSettings((s) => ({ ...s, auto_post_count: Number(e.target.value) }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground/80 text-sm">画像付き投稿</Label>
+                <Switch
+                  checked={apSettings.auto_post_with_image ?? false}
+                  onCheckedChange={(v) => setApSettings((s) => ({ ...s, auto_post_with_image: v }))}
+                />
+              </div>
+            </div>
+
+            {/* Auto Follow Settings */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-foreground">自動フォロー</h4>
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground/80 text-sm">自動フォローを有効にする</Label>
+                <Switch
+                  checked={apSettings.auto_follow_enabled ?? false}
+                  onCheckedChange={(v) => setApSettings((s) => ({ ...s, auto_follow_enabled: v }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-foreground/80 text-sm">キーワード</Label>
+                <Input
+                  className="bg-muted border-border text-foreground"
+                  placeholder="カンマ区切りでキーワードを入力"
+                  value={apSettings.auto_follow_keywords ?? ""}
+                  onChange={(e) => setApSettings((s) => ({ ...s, auto_follow_keywords: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground/80 text-sm">1日のフォロー上限</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  className="w-20 bg-muted border-border text-foreground"
+                  value={apSettings.auto_follow_daily_limit ?? 10}
+                  onChange={(e) => setApSettings((s) => ({ ...s, auto_follow_daily_limit: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={handleApSave} disabled={apSaving} className="gap-2">
+              {apSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Auto-Pilot設定を保存
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

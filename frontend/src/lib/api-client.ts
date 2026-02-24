@@ -458,6 +458,21 @@ export const adminApi = {
 
   xOAuthBulkStatus: () =>
     fetchApi<Record<string, XOAuthStatus>>("/api/x-oauth/admin/status/bulk"),
+
+  autoPilotBulkStatus: () =>
+    fetchApi<Record<string, AutoPilotStatus>>("/api/auto-pilot/admin/status/bulk"),
+
+  autoPilotStatus: (userId: number) =>
+    fetchApi<AutoPilotStatus>(`/api/auto-pilot/admin/status/${userId}`),
+
+  autoPilotToggle: (userId: number) =>
+    fetchApi<AutoPilotStatus>(`/api/auto-pilot/admin/toggle/${userId}`, { method: "POST" }),
+
+  autoPilotUpdateSettings: (userId: number, data: Partial<AutoPilotStatus>) =>
+    fetchApi<AutoPilotStatus>(`/api/auto-pilot/admin/settings/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };
 
 // X OAuth API

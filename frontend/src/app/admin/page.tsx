@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { adminApi } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import { getTierLabel, getTierColor, formatDate } from "@/lib/utils";
-import type { User, AdminStats, XOAuthStatus } from "@/types";
+import type { User, AdminStats, XOAuthStatus, AutoPilotStatus } from "@/types";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [xStatuses, setXStatuses] = useState<Record<string, XOAuthStatus>>({});
+  const [apStatuses, setApStatuses] = useState<Record<string, AutoPilotStatus>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,11 +27,12 @@ export default function AdminPage() {
       return;
     }
 
-    Promise.all([adminApi.stats(), adminApi.users(), adminApi.xOAuthBulkStatus()])
-      .then(([s, u, xs]) => {
+    Promise.all([adminApi.stats(), adminApi.users(), adminApi.xOAuthBulkStatus(), adminApi.autoPilotBulkStatus()])
+      .then(([s, u, xs, ap]) => {
         setStats(s);
         setUsers(u);
         setXStatuses(xs);
+        setApStatuses(ap);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -149,6 +151,7 @@ export default function AdminPage() {
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">ロール</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">ティア</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">X連携</th>
+                  <th className="text-center py-3 px-4 text-muted-foreground font-medium">Auto-Pilot</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">ステータス</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">登録日</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">操作</th>
@@ -184,6 +187,17 @@ export default function AdminPage() {
                       ) : (
                         <Badge variant="outline" className="border-border text-muted-foreground text-xs">
                           未連携
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {apStatuses[String(u.id)]?.enabled ? (
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                          ON
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-border text-muted-foreground text-xs">
+                          OFF
                         </Badge>
                       )}
                     </td>

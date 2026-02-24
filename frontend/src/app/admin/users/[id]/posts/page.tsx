@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Plus, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,6 +37,10 @@ export default function AdminPostsPage() {
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newContent, setNewContent] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [publishAfterCreate, setPublishAfterCreate] = useState(false);
 
   const {
     data: posts,
@@ -78,6 +84,30 @@ export default function AdminPostsPage() {
     }
   };
 
+  const handleCreate = async (publish: boolean) => {
+    if (!newContent.trim()) return;
+    setCreating(true);
+    setPublishAfterCreate(publish);
+    try {
+      const post = await adminApi.postCreate(userId, {
+        content: newContent.trim(),
+        status: "draft",
+        post_type: "original",
+      });
+      if (publish) {
+        await adminApi.postPublish(userId, post.id);
+      }
+      setNewContent("");
+      setShowCreate(false);
+      refetch();
+    } catch {
+      // Error handling
+    } finally {
+      setCreating(false);
+      setPublishAfterCreate(false);
+    }
+  };
+
   const filteredPosts = posts ?? [];
 
   return (
@@ -113,6 +143,10 @@ export default function AdminPostsPage() {
             ))}
           </TabsList>
         </Tabs>
+        <Button onClick={() => setShowCreate(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          新規投稿
+        </Button>
       </div>
 
       {/* Error state */}
@@ -154,6 +188,60 @@ export default function AdminPostsPage() {
           ))}
         </div>
       )}
+
+      {/* Create post dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">新規投稿</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              このユーザーとして投稿を作成します
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-foreground/80">本文</Label>
+              <Textarea
+                placeholder="投稿内容を入力してください..."
+                value={newContent}
+                onChange={(e) => setNewContent(e.target.value)}
+                rows={6}
+                className="bg-muted border-border text-foreground resize-none"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {newContent.length}/280
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => handleCreate(false)}
+              disabled={creating || !newContent.trim()}
+              className="gap-2"
+            >
+              {creating && !publishAfterCreate ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              下書き保存
+            </Button>
+            <Button
+              onClick={() => handleCreate(true)}
+              disabled={creating || !newContent.trim()}
+              className="gap-2"
+            >
+              {creating && publishAfterCreate ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              今すぐ投稿
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog

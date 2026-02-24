@@ -8,6 +8,7 @@ import {
   Repeat2,
   TrendingUp,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import {
   BarChart,
@@ -18,6 +19,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -37,21 +39,42 @@ export default function AdminAnalyticsPage() {
   const params = useParams();
   const userId = Number(params.id);
   const [days, setDays] = useState(30);
+  const [collecting, setCollecting] = useState(false);
+  const [collectMessage, setCollectMessage] = useState<string | null>(null);
 
   const {
     data: overview,
     loading: overviewLoading,
     error: overviewError,
+    refetch: refetchOverview,
   } = useApi<AnalyticsOverview>(
-    useCallback(() => adminApi.analyticsOverview(userId), [userId])
+    useCallback(() => adminApi.analyticsOverview(userId, days), [userId, days])
   );
 
   const {
     data: trends,
     loading: trendsLoading,
+    refetch: refetchTrends,
   } = useApi<AnalyticsTrend[]>(
     useCallback(() => adminApi.analyticsTrends(userId, days), [userId, days])
   );
+
+  const handleCollect = async () => {
+    setCollecting(true);
+    setCollectMessage(null);
+    try {
+      const result = await adminApi.analyticsCollect(userId);
+      setCollectMessage(result.message || "データ収集が完了しました");
+      refetchOverview();
+      refetchTrends();
+    } catch (err) {
+      setCollectMessage(
+        err instanceof Error ? err.message : "データ収集に失敗しました"
+      );
+    } finally {
+      setCollecting(false);
+    }
+  };
 
   const engagementByType = [
     {
@@ -94,7 +117,26 @@ export default function AdminAnalyticsPage() {
             </SelectContent>
           </Select>
         </div>
+        <Button
+          onClick={handleCollect}
+          disabled={collecting}
+          variant="outline"
+          className="gap-2"
+        >
+          {collecting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          データ収集
+        </Button>
       </div>
+
+      {collectMessage && (
+        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm">
+          {collectMessage}
+        </div>
+      )}
 
       {overviewError && (
         <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm">

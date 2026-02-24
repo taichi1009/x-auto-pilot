@@ -606,6 +606,11 @@ export const adminApi = {
     return fetchApi<AnalyticsTrend[]>(`/api/analytics/admin/${userId}/trends${qs ? `?${qs}` : ""}`);
   },
 
+  analyticsCollect: (userId: number) =>
+    fetchApi<{ message: string }>(`/api/analytics/admin/${userId}/collect`, {
+      method: "POST",
+    }),
+
   // Schedules
   scheduleList: (userId: number) =>
     fetchApi<Schedule[]>(`/api/schedules/admin/${userId}`),

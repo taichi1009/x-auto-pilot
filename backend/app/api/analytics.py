@@ -81,3 +81,16 @@ def admin_get_trends(
         raise HTTPException(status_code=404, detail="User not found")
     service = AnalyticsService(db, user_id=user_id)
     return service.get_trends(days=days, user_id=user_id)
+
+
+@router.post("/admin/{user_id}/collect")
+def admin_collect_analytics(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    service = AnalyticsService(db, user_id=user_id)
+    return service.collect_analytics(user_id=user_id)

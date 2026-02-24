@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     X_ACCESS_TOKEN_SECRET: str = ""
     X_BEARER_TOKEN: str = ""
 
+    # X OAuth 2.0 (PKCE) credentials
+    X_CLIENT_ID: str = ""
+    X_CLIENT_SECRET: str = ""
+    X_OAUTH_REDIRECT_URI: str = "http://localhost:3000/auth/x/callback"
+
     # X API tier: free, basic, or pro
     X_API_TIER: str = "free"
 

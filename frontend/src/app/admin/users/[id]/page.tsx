@@ -15,8 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { adminApi } from "@/lib/api-client";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
-import type { User } from "@/types";
+import type { User, XOAuthStatus } from "@/types";
 import Link from "next/link";
 
 export default function AdminUserDetailPage() {
@@ -32,6 +33,7 @@ export default function AdminUserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [xStatus, setXStatus] = useState<XOAuthStatus | null>(null);
 
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
@@ -39,13 +41,16 @@ export default function AdminUserDetailPage() {
       return;
     }
 
-    adminApi
-      .getUser(userId)
-      .then((u) => {
+    Promise.all([
+      adminApi.getUser(userId),
+      adminApi.xOAuthStatus(userId),
+    ])
+      .then(([u, xs]) => {
         setTargetUser(u);
         setRole(u.role);
         setTier(u.subscription_tier);
         setIsActive(u.is_active);
+        setXStatus(xs);
       })
       .catch(() => router.push("/admin"))
       .finally(() => setLoading(false));
@@ -161,6 +166,63 @@ export default function AdminUserDetailPage() {
               保存
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* X Account Connection */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground">Xアカウント連携</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {xStatus?.connected ? (
+                <>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                    連携済み
+                  </Badge>
+                  <Badge variant="outline" className="border-border text-muted-foreground">
+                    {xStatus.method === "oauth2" ? "OAuth 2.0" : "手動設定"}
+                  </Badge>
+                  {xStatus.username && (
+                    <span className="text-sm text-foreground font-medium">
+                      @{xStatus.username}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <Badge className="bg-muted text-muted-foreground border-border">
+                  未連携
+                </Badge>
+              )}
+            </div>
+            {xStatus?.connected && xStatus.method === "oauth2" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await adminApi.xOAuthDisconnect(userId);
+                    setXStatus({ connected: false, method: null, username: "", x_user_id: "", token_expired: false });
+                    setMessage("X連携を解除しました");
+                    setTimeout(() => setMessage(null), 3000);
+                  } catch {
+                    setMessage("X連携の解除に失敗しました");
+                    setTimeout(() => setMessage(null), 3000);
+                  }
+                }}
+                className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+              >
+                連携解除
+              </Button>
+            )}
+          </div>
+          {xStatus?.token_expired && (
+            <p className="text-sm text-amber-400">
+              トークンの有効期限が切れています
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

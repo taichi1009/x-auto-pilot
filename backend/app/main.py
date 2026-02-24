@@ -21,6 +21,7 @@ from app.api.auto_pilot import router as auto_pilot_router
 from app.api.auth import router as auth_router
 from app.api.admin import router as admin_router
 from app.api.payment import router as payment_router
+from app.api.x_oauth import router as x_oauth_router
 from app.jobs.scheduler import start_scheduler, shutdown_scheduler
 
 # Configure logging
@@ -154,6 +155,7 @@ app.include_router(auto_pilot_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(payment_router)
+app.include_router(x_oauth_router)
 
 
 @app.get("/api/health")

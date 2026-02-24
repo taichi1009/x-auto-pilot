@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Loader2, Save, ArrowLeft } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,14 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { adminApi } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/auth-context";
 import type { User, XOAuthStatus, AutoPilotStatus } from "@/types";
-import Link from "next/link";
 
 export default function AdminUserDetailPage() {
-  const router = useRouter();
   const params = useParams();
-  const { user: currentUser } = useAuth();
   const userId = Number(params.id);
 
   const [targetUser, setTargetUser] = useState<User | null>(null);
@@ -41,11 +37,6 @@ export default function AdminUserDetailPage() {
   const [apToggling, setApToggling] = useState(false);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.push("/");
-      return;
-    }
-
     Promise.all([
       adminApi.getUser(userId),
       adminApi.xOAuthStatus(userId),
@@ -67,9 +58,9 @@ export default function AdminUserDetailPage() {
           auto_follow_daily_limit: ap.auto_follow_daily_limit,
         });
       })
-      .catch(() => router.push("/admin"))
+      .catch(() => {})
       .finally(() => setLoading(false));
-  }, [userId, currentUser, router]);
+  }, [userId]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -132,14 +123,7 @@ export default function AdminUserDetailPage() {
   if (!targetUser) return null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Link href="/admin">
-        <Button variant="ghost" size="sm" className="gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          ユーザー一覧に戻る
-        </Button>
-      </Link>
-
+    <div className="max-w-2xl space-y-6">
       {message && (
         <div
           className={`p-4 rounded-lg text-sm ${
@@ -154,9 +138,7 @@ export default function AdminUserDetailPage() {
 
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-foreground">
-            {targetUser.name} ({targetUser.email})
-          </CardTitle>
+          <CardTitle className="text-foreground">基本設定</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -277,7 +259,6 @@ export default function AdminUserDetailPage() {
           <CardTitle className="text-foreground">Auto-Pilot設定</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Auto-Pilot Toggle */}
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-foreground/80">Auto-Pilot</Label>
@@ -304,7 +285,6 @@ export default function AdminUserDetailPage() {
           </div>
 
           <div className="border-t border-border pt-4 space-y-4">
-            {/* Auto Post Settings */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground">自動投稿</h4>
               <div className="flex items-center justify-between">
@@ -334,7 +314,6 @@ export default function AdminUserDetailPage() {
               </div>
             </div>
 
-            {/* Auto Follow Settings */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground">自動フォロー</h4>
               <div className="flex items-center justify-between">

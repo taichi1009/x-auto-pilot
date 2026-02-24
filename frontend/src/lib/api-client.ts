@@ -473,6 +473,160 @@ export const adminApi = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  // Persona
+  personaList: (userId: number) =>
+    fetchApi<Persona[]>(`/api/persona/admin/${userId}`),
+
+  personaGetActive: (userId: number) =>
+    fetchApi<Persona | null>(`/api/persona/admin/${userId}/active`),
+
+  personaCreate: (userId: number, data: PersonaCreate) =>
+    fetchApi<Persona>(`/api/persona/admin/${userId}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  personaUpdate: (userId: number, id: number, data: PersonaUpdate) =>
+    fetchApi<Persona>(`/api/persona/admin/${userId}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  personaDelete: (userId: number, id: number) =>
+    fetchApi<void>(`/api/persona/admin/${userId}/${id}`, { method: "DELETE" }),
+
+  personaActivate: (userId: number, id: number) =>
+    fetchApi<Persona>(`/api/persona/admin/${userId}/${id}/activate`, { method: "POST" }),
+
+  // Strategy
+  strategyList: (userId: number) =>
+    fetchApi<ContentStrategy[]>(`/api/strategy/admin/${userId}`),
+
+  strategyGetActive: (userId: number) =>
+    fetchApi<ContentStrategy | null>(`/api/strategy/admin/${userId}/active`),
+
+  strategyRecommendations: (userId: number) =>
+    fetchApi<{ strategy_name?: string; message?: string; recommendations: string[] }>(
+      `/api/strategy/admin/${userId}/recommendations`
+    ),
+
+  strategyCreate: (userId: number, data: ContentStrategyCreate) =>
+    fetchApi<ContentStrategy>(`/api/strategy/admin/${userId}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  strategyUpdate: (userId: number, id: number, data: ContentStrategyUpdate) =>
+    fetchApi<ContentStrategy>(`/api/strategy/admin/${userId}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  strategyDelete: (userId: number, id: number) =>
+    fetchApi<void>(`/api/strategy/admin/${userId}/${id}`, { method: "DELETE" }),
+
+  strategyActivate: (userId: number, id: number) =>
+    fetchApi<ContentStrategy>(`/api/strategy/admin/${userId}/${id}/activate`, { method: "POST" }),
+
+  // Templates
+  templateList: (userId: number) =>
+    fetchApi<Template[]>(`/api/templates/admin/${userId}`),
+
+  templateCreate: (userId: number, data: TemplateCreate) =>
+    fetchApi<Template>(`/api/templates/admin/${userId}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  templateUpdate: (userId: number, id: number, data: TemplateUpdate) =>
+    fetchApi<Template>(`/api/templates/admin/${userId}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  templateDelete: (userId: number, id: number) =>
+    fetchApi<void>(`/api/templates/admin/${userId}/${id}`, { method: "DELETE" }),
+
+  // Posts
+  postList: (userId: number, params?: { status?: string; skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.set("status", params.status);
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return fetchApi<Post[]>(`/api/posts/admin/${userId}${qs ? `?${qs}` : ""}`);
+  },
+
+  postCreate: (userId: number, data: PostCreate) =>
+    fetchApi<Post>(`/api/posts/admin/${userId}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  postUpdate: (userId: number, id: number, data: PostUpdate) =>
+    fetchApi<Post>(`/api/posts/admin/${userId}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  postDelete: (userId: number, id: number) =>
+    fetchApi<void>(`/api/posts/admin/${userId}/${id}`, { method: "DELETE" }),
+
+  postPublish: (userId: number, id: number) =>
+    fetchApi<Post>(`/api/posts/admin/${userId}/${id}/publish`, { method: "POST" }),
+
+  // Follows
+  followList: (userId: number) =>
+    fetchApi<FollowTarget[]>(`/api/follows/admin/${userId}`),
+
+  followDiscover: (userId: number, keyword: string) =>
+    fetchApi<{ users: FollowTarget[] }>(`/api/follows/admin/${userId}/discover?query=${encodeURIComponent(keyword)}`, {
+      method: "POST",
+    }),
+
+  followExecute: (userId: number, targetId: number) =>
+    fetchApi<FollowTarget>(`/api/follows/admin/${userId}/${targetId}/execute`, { method: "POST" }),
+
+  followStats: (userId: number) =>
+    fetchApi<FollowStats>(`/api/follows/admin/${userId}/stats`),
+
+  // Analytics
+  analyticsOverview: (userId: number, days?: number) => {
+    const query = new URLSearchParams();
+    if (days) query.set("days", String(days));
+    const qs = query.toString();
+    return fetchApi<AnalyticsOverview>(`/api/analytics/admin/${userId}/overview${qs ? `?${qs}` : ""}`);
+  },
+
+  analyticsTrends: (userId: number, days?: number) => {
+    const query = new URLSearchParams();
+    if (days) query.set("days", String(days));
+    const qs = query.toString();
+    return fetchApi<AnalyticsTrend[]>(`/api/analytics/admin/${userId}/trends${qs ? `?${qs}` : ""}`);
+  },
+
+  // Schedules
+  scheduleList: (userId: number) =>
+    fetchApi<Schedule[]>(`/api/schedules/admin/${userId}`),
+
+  scheduleCreate: (userId: number, data: ScheduleCreate) =>
+    fetchApi<Schedule>(`/api/schedules/admin/${userId}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  scheduleUpdate: (userId: number, id: number, data: ScheduleUpdate) =>
+    fetchApi<Schedule>(`/api/schedules/admin/${userId}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  scheduleDelete: (userId: number, id: number) =>
+    fetchApi<void>(`/api/schedules/admin/${userId}/${id}`, { method: "DELETE" }),
+
+  scheduleToggle: (userId: number, id: number) =>
+    fetchApi<Schedule>(`/api/schedules/admin/${userId}/${id}/toggle`, { method: "PUT" }),
 };
 
 // X OAuth API

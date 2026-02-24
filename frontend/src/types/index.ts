@@ -382,6 +382,15 @@ export interface TokenResponse {
   user: User;
 }
 
+// X OAuth Connection Status
+export interface XOAuthStatus {
+  connected: boolean;
+  method: "oauth1" | "oauth2" | null;
+  username: string;
+  x_user_id: string;
+  token_expired: boolean;
+}
+
 // Admin
 export interface AdminStats {
   total_users: number;

@@ -33,6 +33,7 @@ import type {
   TokenResponse,
   User,
   AdminStats,
+  XOAuthStatus,
 } from "@/types";
 
 const BASE_URL =
@@ -446,6 +447,35 @@ export const adminApi = {
     const qs = query.toString();
     return fetchApi<Post[]>(`/api/admin/posts${qs ? `?${qs}` : ""}`);
   },
+
+  xOAuthStatus: (userId: number) =>
+    fetchApi<XOAuthStatus>(`/api/x-oauth/admin/status/${userId}`),
+
+  xOAuthDisconnect: (userId: number) =>
+    fetchApi<{ success: boolean }>(`/api/x-oauth/admin/disconnect/${userId}`, {
+      method: "POST",
+    }),
+
+  xOAuthBulkStatus: () =>
+    fetchApi<Record<string, XOAuthStatus>>("/api/x-oauth/admin/status/bulk"),
+};
+
+// X OAuth API
+export const xOAuthApi = {
+  authorize: () =>
+    fetchApi<{ authorization_url: string }>("/api/x-oauth/authorize"),
+
+  callback: (state: string, code: string) =>
+    fetchApi<{ success: boolean; username: string; x_user_id: string }>(
+      `/api/x-oauth/callback?state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`
+    ),
+
+  status: () => fetchApi<XOAuthStatus>("/api/x-oauth/status"),
+
+  disconnect: () =>
+    fetchApi<{ success: boolean }>("/api/x-oauth/disconnect", {
+      method: "POST",
+    }),
 };
 
 // Payment API

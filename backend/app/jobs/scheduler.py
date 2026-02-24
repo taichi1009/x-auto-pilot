@@ -527,6 +527,57 @@ def _auto_follow_for_user(db, user_id: int) -> None:
     logger.info("Auto-follow job completed for user %d: %d users followed", user_id, followed_count)
 
 
+def refresh_expiring_tokens_job() -> None:
+    """Pre-refresh OAuth 2.0 tokens that expire within 30 minutes."""
+    import time
+    from app.models.models import AppSetting
+    from app.services.x_oauth_service import refresh_oauth2_token
+
+    db = SessionLocal()
+    try:
+        threshold = str(int(time.time() + 1800))  # 30 min from now
+        # Find all users using OAuth 2.0
+        oauth2_users = (
+            db.query(AppSetting)
+            .filter(
+                AppSetting.key == "x_oauth_method",
+                AppSetting.value == "oauth2",
+            )
+            .all()
+        )
+
+        refreshed = 0
+        for setting in oauth2_users:
+            uid = setting.user_id
+            if uid is None:
+                continue
+            expires_row = (
+                db.query(AppSetting)
+                .filter(
+                    AppSetting.user_id == uid,
+                    AppSetting.key == "x_oauth2_token_expires_at",
+                )
+                .first()
+            )
+            if not expires_row:
+                continue
+
+            try:
+                expires_at = float(expires_row.value)
+            except (ValueError, TypeError):
+                continue
+
+            if expires_at < float(threshold):
+                if refresh_oauth2_token(db, uid):
+                    refreshed += 1
+
+        logger.info("Token refresh job: refreshed %d tokens", refreshed)
+    except Exception as exc:
+        logger.error("Token refresh job failed: %s", exc)
+    finally:
+        db.close()
+
+
 def sync_schedules() -> None:
     """Synchronize active schedules from the database to APScheduler."""
     db = SessionLocal()
@@ -586,7 +637,7 @@ def sync_schedules() -> None:
                     logger.info("Added one-time job: %s", job_id)
 
         # Remove jobs for deactivated or deleted schedules
-        system_jobs = {"analytics_collector", "schedule_sync", "prediction_tracker", "auto_post", "auto_follow"}
+        system_jobs = {"analytics_collector", "schedule_sync", "prediction_tracker", "auto_post", "auto_follow", "token_refresh"}
         stale_jobs = existing_job_ids - schedule_job_ids - system_jobs
         for job_id in stale_jobs:
             if job_id.startswith("schedule_"):
@@ -647,6 +698,15 @@ def start_scheduler() -> None:
         CronTrigger(hour=10, minute=0),
         id="auto_follow",
         name="Auto-Pilot Follow",
+        replace_existing=True,
+    )
+
+    # OAuth 2.0 token refresh every 30 minutes
+    scheduler.add_job(
+        refresh_expiring_tokens_job,
+        CronTrigger(minute="*/30"),
+        id="token_refresh",
+        name="OAuth2 Token Refresh",
         replace_existing=True,
     )
 

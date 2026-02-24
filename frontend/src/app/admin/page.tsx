@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { adminApi } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import { getTierLabel, getTierColor, formatDate } from "@/lib/utils";
-import type { User, AdminStats } from "@/types";
+import type { User, AdminStats, XOAuthStatus } from "@/types";
 
 export default function AdminPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [xStatuses, setXStatuses] = useState<Record<string, XOAuthStatus>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,10 +26,11 @@ export default function AdminPage() {
       return;
     }
 
-    Promise.all([adminApi.stats(), adminApi.users()])
-      .then(([s, u]) => {
+    Promise.all([adminApi.stats(), adminApi.users(), adminApi.xOAuthBulkStatus()])
+      .then(([s, u, xs]) => {
         setStats(s);
         setUsers(u);
+        setXStatuses(xs);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -146,6 +148,7 @@ export default function AdminPage() {
                   <th className="text-left py-3 px-4 text-muted-foreground font-medium">メール</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">ロール</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">ティア</th>
+                  <th className="text-center py-3 px-4 text-muted-foreground font-medium">X連携</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">ステータス</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">登録日</th>
                   <th className="text-center py-3 px-4 text-muted-foreground font-medium">操作</th>
@@ -165,6 +168,24 @@ export default function AdminPage() {
                       <Badge variant="outline" className={getTierColor(u.subscription_tier)}>
                         {getTierLabel(u.subscription_tier)}
                       </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {xStatuses[String(u.id)]?.connected ? (
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                            連携済み
+                          </Badge>
+                          {xStatuses[String(u.id)]?.username && (
+                            <span className="text-xs text-muted-foreground">
+                              @{xStatuses[String(u.id)].username}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="border-border text-muted-foreground text-xs">
+                          未連携
+                        </Badge>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <Badge variant="outline" className={u.is_active ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}>

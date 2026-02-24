@@ -30,9 +30,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApi } from "@/hooks/use-api";
-import { settingsApi, autoPilotApi, paymentApi } from "@/lib/api-client";
+import { settingsApi, autoPilotApi, paymentApi, xOAuthApi } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
-import type { AppSetting, AutoPilotStatus } from "@/types";
+import type { AppSetting, AutoPilotStatus, XOAuthStatus } from "@/types";
 
 interface SettingsState {
   x_api_key: string;
@@ -115,6 +115,41 @@ export default function SettingsPage() {
     data: settingsData,
     loading,
   } = useApi<AppSetting[]>(useCallback(() => settingsApi.get(), []));
+
+  // X OAuth connection status
+  const [xOAuth, setXOAuth] = useState<XOAuthStatus | null>(null);
+  const [xOAuthLoading, setXOAuthLoading] = useState(false);
+  const [xManualOpen, setXManualOpen] = useState(false);
+
+  useEffect(() => {
+    xOAuthApi.status().then(setXOAuth).catch(() => {});
+  }, []);
+
+  const handleConnectX = async () => {
+    setXOAuthLoading(true);
+    try {
+      const { authorization_url } = await xOAuthApi.authorize();
+      window.location.href = authorization_url;
+    } catch (err) {
+      setSaveMessage(
+        err instanceof Error ? err.message : "X連携の開始に失敗しました"
+      );
+      setTimeout(() => setSaveMessage(null), 3000);
+      setXOAuthLoading(false);
+    }
+  };
+
+  const handleDisconnectX = async () => {
+    try {
+      await xOAuthApi.disconnect();
+      setXOAuth({ connected: false, method: null, username: "", x_user_id: "", token_expired: false });
+      setSaveMessage("X連携を解除しました");
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch {
+      setSaveMessage("X連携の解除に失敗しました");
+      setTimeout(() => setSaveMessage(null), 3000);
+    }
+  };
 
   // Auto-Pilot settings
   const [apSettings, setApSettings] = useState<AutoPilotStatus>({
@@ -264,116 +299,216 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* X API Configuration */}
+      {/* X Account Connection (OAuth 2.0) */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
-            <Key className="h-5 w-5 text-blue-400" />
-            X API設定
+            <Shield className="h-5 w-5 text-blue-400" />
+            Xアカウント連携
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-foreground/80">API Key</Label>
-              <Input
-                type="password"
-                placeholder="API Keyを入力"
-                value={settings.x_api_key}
-                onChange={(e) =>
-                  setSettings({ ...settings, x_api_key: e.target.value })
-                }
-                className="bg-muted border-border text-foreground"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground/80">API Secret</Label>
-              <Input
-                type="password"
-                placeholder="API Secretを入力"
-                value={settings.x_api_secret}
-                onChange={(e) =>
-                  setSettings({ ...settings, x_api_secret: e.target.value })
-                }
-                className="bg-muted border-border text-foreground"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-foreground/80">Access Token</Label>
-              <Input
-                type="password"
-                placeholder="Access Tokenを入力"
-                value={settings.x_access_token}
-                onChange={(e) =>
-                  setSettings({ ...settings, x_access_token: e.target.value })
-                }
-                className="bg-muted border-border text-foreground"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground/80">Access Token Secret</Label>
-              <Input
-                type="password"
-                placeholder="Access Token Secretを入力"
-                value={settings.x_access_token_secret}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    x_access_token_secret: e.target.value,
-                  })
-                }
-                className="bg-muted border-border text-foreground"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-foreground/80">Bearer Token</Label>
-            <Input
-              type="password"
-              placeholder="Bearer Tokenを入力"
-              value={settings.x_bearer_token}
-              onChange={(e) =>
-                setSettings({ ...settings, x_bearer_token: e.target.value })
-              }
-              className="bg-muted border-border text-foreground"
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={handleTestConnection}
-              disabled={testing}
-              className="gap-2"
-            >
-              {testing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {xOAuth?.connected ? (
+                <>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                    連携済み
+                  </Badge>
+                  <Badge variant="outline" className="border-border text-muted-foreground">
+                    {xOAuth.method === "oauth2" ? "OAuth 2.0" : "手動設定"}
+                  </Badge>
+                  {xOAuth.username && (
+                    <span className="text-sm text-foreground font-medium">
+                      @{xOAuth.username}
+                    </span>
+                  )}
+                </>
               ) : (
-                <Shield className="h-4 w-4" />
+                <Badge className="bg-muted text-muted-foreground border-border">
+                  未連携
+                </Badge>
               )}
-              接続テスト
-            </Button>
-            {testResult && (
-              <div
-                className={`flex items-center gap-2 text-sm ${
-                  testResult.success ? "text-green-400" : "text-red-400"
-                }`}
+            </div>
+            <div className="flex items-center gap-2">
+              {xOAuth?.connected && xOAuth.method === "oauth2" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDisconnectX}
+                  className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                >
+                  連携解除
+                </Button>
+              ) : !xOAuth?.connected ? (
+                <Button
+                  onClick={handleConnectX}
+                  disabled={xOAuthLoading}
+                  className="gap-2"
+                >
+                  {xOAuthLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Key className="h-4 w-4" />
+                  )}
+                  Xアカウントを連携
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
+          {xOAuth?.token_expired && xOAuth.method === "oauth2" && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+              <p className="text-sm text-amber-400">
+                トークンの有効期限が切れています。再認証してください。
+              </p>
+              <Button
+                size="sm"
+                onClick={handleConnectX}
+                disabled={xOAuthLoading}
+                className="gap-2"
               >
-                {testResult.success ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
-                {testResult.message}
+                {xOAuthLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                再認証
+              </Button>
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            OAuth 2.0で連携すると、APIキーの手動入力が不要になります。ボタンをクリックしてXの認証ページで承認するだけで連携できます。
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* X API Configuration (Manual) */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <button
+            onClick={() => setXManualOpen(!xManualOpen)}
+            className="w-full flex items-center justify-between"
+          >
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Key className="h-5 w-5 text-blue-400" />
+              X API設定（手動）
+            </CardTitle>
+            <span className="text-muted-foreground text-sm">
+              {xManualOpen ? "▲" : "▼"}
+            </span>
+          </button>
+        </CardHeader>
+        {xManualOpen && (
+          <CardContent className="space-y-4">
+            {xOAuth?.connected && xOAuth.method === "oauth2" && (
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                <p className="text-xs text-blue-400">
+                  OAuth 2.0で連携している場合、手動設定は使用されません。
+                </p>
               </div>
             )}
-          </div>
 
-        </CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground/80">API Key</Label>
+                <Input
+                  type="password"
+                  placeholder="API Keyを入力"
+                  value={settings.x_api_key}
+                  onChange={(e) =>
+                    setSettings({ ...settings, x_api_key: e.target.value })
+                  }
+                  className="bg-muted border-border text-foreground"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground/80">API Secret</Label>
+                <Input
+                  type="password"
+                  placeholder="API Secretを入力"
+                  value={settings.x_api_secret}
+                  onChange={(e) =>
+                    setSettings({ ...settings, x_api_secret: e.target.value })
+                  }
+                  className="bg-muted border-border text-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground/80">Access Token</Label>
+                <Input
+                  type="password"
+                  placeholder="Access Tokenを入力"
+                  value={settings.x_access_token}
+                  onChange={(e) =>
+                    setSettings({ ...settings, x_access_token: e.target.value })
+                  }
+                  className="bg-muted border-border text-foreground"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground/80">Access Token Secret</Label>
+                <Input
+                  type="password"
+                  placeholder="Access Token Secretを入力"
+                  value={settings.x_access_token_secret}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      x_access_token_secret: e.target.value,
+                    })
+                  }
+                  className="bg-muted border-border text-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground/80">Bearer Token</Label>
+              <Input
+                type="password"
+                placeholder="Bearer Tokenを入力"
+                value={settings.x_bearer_token}
+                onChange={(e) =>
+                  setSettings({ ...settings, x_bearer_token: e.target.value })
+                }
+                className="bg-muted border-border text-foreground"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleTestConnection}
+                disabled={testing}
+                className="gap-2"
+              >
+                {testing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Shield className="h-4 w-4" />
+                )}
+                接続テスト
+              </Button>
+              {testResult && (
+                <div
+                  className={`flex items-center gap-2 text-sm ${
+                    testResult.success ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  {testResult.success ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <XCircle className="h-4 w-4" />
+                  )}
+                  {testResult.message}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Subscription Plans */}
